@@ -340,25 +340,39 @@ async function snapAndDetect(){
   detectCooldown=true;
   const snapBtn=document.getElementById('snapBtn');
   snapBtn.textContent='AI 分析中…'; snapBtn.disabled=true;
-  setStatus('正在分析畫面，請稍候…');
-  try{
-    const b64=captureFrame();
-    const unfound=ITEM_KEYS.filter(k=>!foundItems[k]);
-    const itemList={backpack:'書包',pen:'筆（原子筆、鉛筆等）',book:'書本（課本、筆記本等）',bottle:'水瓶',phone:'手機或平板'};
-    const lookingFor=unfound.map(k=>itemList[k]).join('、');
-    const resp=await fetch('/api/detect',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({imageBase64:b64,itemsToFind:lookingFor})
-    });
-    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||'伺服器錯誤 '+resp.status);}
-    const data=await resp.json();
-    const result=data.result||{};
-    let newFound=0;
-    ITEM_KEYS.forEach(k=>{if(!foundItems[k]&&result[k]===true){markFound(k,'AI 偵測 ✓');newFound++;}});
-    setStatus(newFound===0?'這次沒偵測到新物品，換個角度再試試':`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
-  }catch(e){setStatus('偵測失敗：'+(e.message||'未知錯誤'));}
+
+  const b64=captureFrame();
+  const unfound=ITEM_KEYS.filter(k=>!foundItems[k]);
+  const itemList={backpack:'書包',pen:'筆（原子筆、鉛筆等）',book:'書本（課本、筆記本等）',bottle:'水瓶',phone:'手機或平板'};
+  const lookingFor=unfound.map(k=>itemList[k]).join('、');
+
+  let success=false;
+  for(let attempt=1;attempt<=3;attempt++){
+    setStatus(attempt===1?'正在分析畫面，請稍候…':`重試中（第 ${attempt} 次）…`);
+    try{
+      const resp=await fetch('/api/detect',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({imageBase64:b64,itemsToFind:lookingFor})
+      });
+      if(resp.status===503||resp.status===429){
+        if(attempt<3){await new Promise(r=>setTimeout(r,2000));continue;}
+        throw new Error('AI 伺服器忙碌中，請稍後再試');
+      }
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||'伺服器錯誤 '+resp.status);}
+      const data=await resp.json();
+      const result=data.result||{};
+      let newFound=0;
+      ITEM_KEYS.forEach(k=>{if(!foundItems[k]&&result[k]===true){markFound(k,'AI 偵測 ✓');newFound++;}});
+      setStatus(newFound===0?'這次沒偵測到新物品，換個角度再試試':`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
+      success=true; break;
+    }catch(e){
+      if(attempt===3)setStatus('偵測失敗：'+(e.message||'未知錯誤')+'，請手動點擊確認');
+      else await new Promise(r=>setTimeout(r,2000));
+    }
+  }
+
   snapBtn.textContent='拍照偵測'; snapBtn.disabled=false;
-  setTimeout(()=>{detectCooldown=false;},2000);
+  setTimeout(()=>{detectCooldown=false;},1500);
 }
 
 function markFound(key,src){
