@@ -133,14 +133,14 @@ body {
 .cam-flip-btn {
   position: absolute; top: 10px; right: 10px;
   width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.65); border: 1.5px solid rgba(255,255,255,0.3);
   display: none; align-items: center; justify-content: center;
-  cursor: pointer; backdrop-filter: blur(4px);
-  transition: background .2s; z-index: 10;
+  cursor: pointer; z-index: 20; pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
+  transition: background .15s, transform .1s;
 }
-.cam-flip-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.93); }
-.cam-flip-btn svg { width: 22px; height: 22px; }
+.cam-flip-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.9); }
+.cam-flip-btn svg { width: 20px; height: 20px; pointer-events: none; }
 .detect-box {
   position: absolute;
   border: 1.5px solid var(--teal);
@@ -219,49 +219,55 @@ body {
   text-align: center; margin-bottom: .75rem;
 }
 
-/* Sound grid */
+/* Sound grid - anonymous */
 .sound-grid {
   display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 10px; margin-bottom: 1.25rem;
+  gap: 10px; margin-bottom: 1rem;
 }
 .sound-card {
-  padding: 16px 12px;
+  padding: 18px 12px 14px;
   background: var(--bg2); border: 0.5px solid var(--border);
   border-radius: var(--radius);
   text-align: center; cursor: pointer;
   transition: all .2s; user-select: none;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
-.sound-card:active { transform: scale(0.97); }
-.sound-card.playing {
-  border-color: rgba(163,113,247,0.6);
-  background: var(--purple-dim);
+.sound-card:active { transform: scale(0.96); }
+.sound-card.playing { border-color: rgba(163,113,247,0.7); background: var(--purple-dim); }
+.sound-card.done { border-color: rgba(63,185,80,0.5); background: var(--teal-dim); }
+.sound-number { font-size: 22px; font-weight: 500; color: var(--text); line-height: 1; }
+.sound-wave { display: flex; align-items: flex-end; gap: 3px; height: 24px; }
+.sound-wave span {
+  display: block; width: 4px; border-radius: 2px;
+  background: var(--text3); height: 6px;
+  transition: background .2s;
 }
-.sound-emoji { font-size: 32px; line-height: 1; margin-bottom: 8px; display: block; }
-.sound-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
-.sound-desc { font-size: 11px; color: var(--text2); }
-.sound-playing { font-size: 10px; color: var(--purple); margin-top: 4px; display: none; }
-.sound-card.playing .sound-playing { display: block; }
+.sound-card.playing .sound-wave span { background: var(--purple); }
+.sound-card.done .sound-wave span { background: var(--teal); }
+.sound-card.playing .sound-wave span:nth-child(1) { animation: bar 0.8s ease-in-out infinite 0.0s; }
+.sound-card.playing .sound-wave span:nth-child(2) { animation: bar 0.8s ease-in-out infinite 0.15s; }
+.sound-card.playing .sound-wave span:nth-child(3) { animation: bar 0.8s ease-in-out infinite 0.3s; }
+.sound-card.playing .sound-wave span:nth-child(4) { animation: bar 0.8s ease-in-out infinite 0.15s; }
+.sound-card.playing .sound-wave span:nth-child(5) { animation: bar 0.8s ease-in-out infinite 0.0s; }
+@keyframes bar { 0%,100%{height:4px} 50%{height:20px} }
+.sound-guess { font-size: 12px; color: var(--teal); min-height: 16px; font-weight: 500; }
 
-/* Hear checklist */
-.hear-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 1rem; }
-.hear-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 11px 14px;
-  background: var(--bg2); border: 0.5px solid var(--border);
-  border-radius: var(--radius-sm); cursor: pointer;
-  transition: all .2s; user-select: none;
+/* Guess panel */
+.guess-panel {
+  background: var(--bg2); border: 0.5px solid var(--border2);
+  border-radius: var(--radius); padding: 1rem;
+  margin-bottom: 1rem;
 }
-.hear-row:active { transform: scale(0.99); }
-.hear-row.checked { border-color: rgba(163,113,247,0.5); background: var(--purple-dim); }
-.hear-check {
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 0.5px solid var(--border2);
-  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: transparent;
-  transition: all .2s;
+.guess-label { font-size: 12px; color: var(--text2); margin-bottom: .75rem; text-align: center; }
+.guess-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.guess-btn {
+  padding: 10px 8px; font-size: 14px;
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-sm); color: var(--text);
+  cursor: pointer; font-family: 'Noto Sans TC', sans-serif;
+  transition: all .15s;
 }
-.hear-row.checked .hear-check { background: var(--purple); border-color: var(--purple); color: #fff; }
-.hear-label { font-size: 13px; color: var(--text); }
+.guess-btn:active { background: var(--purple-dim); border-color: var(--purple); transform: scale(0.97); }
 
 /* AR Stage */
 .ar-stage {
@@ -383,15 +389,13 @@ body {
       <div class="cam-overlay" id="camOverlay">
         <div class="scan-line" id="scanLine" style="display:none"></div>
         <div class="cam-status" id="camStatus">點擊下方按鈕開啟鏡頭</div>
-        <div class="cam-flip-btn" id="flipBtn" onclick="flipCamera()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 7h-9"/>
-            <path d="M14 17H5"/>
-            <polyline points="17 4 20 7 17 10"/>
-            <polyline points="8 14 5 17 8 20"/>
-          </svg>
-        </div>
       </div>
+      <button class="cam-flip-btn" id="flipBtn" onclick="flipCamera()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7h-9"/><path d="M14 17H5"/>
+          <polyline points="17 4 20 7 17 10"/><polyline points="8 14 5 17 8 20"/>
+        </svg>
+      </button>
     </div>
 
     <button class="btn primary" id="camBtn" onclick="startCamera()">開啟鏡頭 · 開始偵測</button>
@@ -438,57 +442,44 @@ body {
     </div>
     <div class="sense-header">
       <div class="sense-badge">Step 2 · 聽覺</div>
-      <div class="sense-title">聆聽 4 種聲音</div>
-      <div class="sense-sub">選一個你喜歡的自然音效，靜下來仔細聆聽，然後逐一確認你聽見的聲音。</div>
+      <div class="sense-title">聽出 4 種聲音</div>
+      <div class="sense-sub">點擊 1–4 播放聲音，仔細聆聽後猜猜看是什麼？</div>
     </div>
 
-    <div class="sound-grid">
-      <div class="sound-card" id="sc-forest" onclick="playSound('forest')">
-        <span class="sound-emoji">🌲</span>
-        <div class="sound-name">森林</div>
-        <div class="sound-desc">蟲鳴鳥叫</div>
-        <div class="sound-playing">♪ 播放中</div>
+    <div class="sound-grid" id="soundGrid">
+      <div class="sound-card" id="sc-0" onclick="playAnon(0)">
+        <div class="sound-number">1</div>
+        <div class="sound-wave" id="sw-0"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="sound-guess" id="sg-0"></div>
       </div>
-      <div class="sound-card" id="sc-ocean" onclick="playSound('ocean')">
-        <span class="sound-emoji">🌊</span>
-        <div class="sound-name">海浪</div>
-        <div class="sound-desc">海風浪聲</div>
-        <div class="sound-playing">♪ 播放中</div>
+      <div class="sound-card" id="sc-1" onclick="playAnon(1)">
+        <div class="sound-number">2</div>
+        <div class="sound-wave" id="sw-1"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="sound-guess" id="sg-1"></div>
       </div>
-      <div class="sound-card" id="sc-river" onclick="playSound('river')">
-        <span class="sound-emoji">🏞</span>
-        <div class="sound-name">溪流</div>
-        <div class="sound-desc">潺潺水聲</div>
-        <div class="sound-playing">♪ 播放中</div>
+      <div class="sound-card" id="sc-2" onclick="playAnon(2)">
+        <div class="sound-number">3</div>
+        <div class="sound-wave" id="sw-2"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="sound-guess" id="sg-2"></div>
       </div>
-      <div class="sound-card" id="sc-rain" onclick="playSound('rain')">
-        <span class="sound-emoji">🌧</span>
-        <div class="sound-name">雨聲</div>
-        <div class="sound-desc">輕柔落雨</div>
-        <div class="sound-playing">♪ 播放中</div>
+      <div class="sound-card" id="sc-3" onclick="playAnon(3)">
+        <div class="sound-number">4</div>
+        <div class="sound-wave" id="sw-3"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="sound-guess" id="sg-3"></div>
       </div>
     </div>
 
-    <div class="hear-list">
-      <div class="hear-row" id="hr0" onclick="toggleHear(0)">
-        <div class="hear-check" id="hc0">✓</div>
-        <span class="hear-label">最明顯的主要聲音</span>
-      </div>
-      <div class="hear-row" id="hr1" onclick="toggleHear(1)">
-        <div class="hear-check" id="hc1">✓</div>
-        <span class="hear-label">遠處的背景音</span>
-      </div>
-      <div class="hear-row" id="hr2" onclick="toggleHear(2)">
-        <div class="hear-check" id="hc2">✓</div>
-        <span class="hear-label">幾乎聽不見的細微音</span>
-      </div>
-      <div class="hear-row" id="hr3" onclick="toggleHear(3)">
-        <div class="hear-check" id="hc3">✓</div>
-        <span class="hear-label">你自己的呼吸聲</span>
+    <div class="guess-panel" id="guessPanel" style="display:none">
+      <div class="guess-label">你覺得這是什麼聲音？</div>
+      <div class="guess-choices">
+        <button class="guess-btn" onclick="submitGuess('森林')">🌲 森林</button>
+        <button class="guess-btn" onclick="submitGuess('海浪')">🌊 海浪</button>
+        <button class="guess-btn" onclick="submitGuess('溪流')">🏞 溪流</button>
+        <button class="guess-btn" onclick="submitGuess('雨聲')">🌧 雨聲</button>
       </div>
     </div>
 
-    <div class="progress-hint" id="hint2">已聆聽 0 / 4 種聲音</div>
+    <div class="progress-hint" id="hint2">已完成 0 / 4 種聲音</div>
     <button class="btn success" id="btn2next" style="display:none" onclick="goS3()">下一步：觸覺 →</button>
   </div>
 
@@ -502,7 +493,7 @@ body {
     <div class="sense-header">
       <div class="sense-badge amber">Step 3 · 觸覺</div>
       <div class="sense-title">感受 3 種觸感</div>
-      <div class="sense-sub">觀察 AR 畫面出現的物品，用手去感受它，然後選擇你的感受。</div>
+      <div class="sense-sub">AR 物件出現在你眼前，伸手去感受它的質地。</div>
     </div>
 
     <div class="touch-progress" id="tprog">
@@ -512,10 +503,11 @@ body {
     </div>
 
     <div class="ar-stage">
-      <canvas id="arCanvas"></canvas>
+      <video id="arVideo" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.55;"></video>
+      <canvas id="arCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
       <div class="ar-hud">
         <div class="ar-pill" id="arPillLeft">物件 1 / 3</div>
-        <div class="ar-pill accent" id="arPillRight">你的皮膚</div>
+        <div class="ar-pill accent" id="arPillRight">手臂皮膚</div>
       </div>
     </div>
 
@@ -555,6 +547,7 @@ body {
 </div>
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ==================== STATE ====================
 let camStream = null, detecting = false, detectCooldown = false;
@@ -562,8 +555,6 @@ let currentFacingMode = 'environment';
 let foundItems = { backpack:false, pen:false, book:false, bottle:false, phone:false };
 let foundCount = 0;
 let currentAudio = null;
-let hearChecked = [false,false,false,false];
-let hearCount = 0;
 let touchIdx = 0;
 let touchAnswered = [false,false,false];
 let arAnimId = null;
@@ -576,18 +567,6 @@ const SOUND_URLS = {
   river:  'river.mp3',
   rain:   'Rain.mp3'
 };
-
-const TOUCH_ITEMS = [
-  { name:'你的皮膚', label:'皮膚', color:'#C8A882',
-    q:'用手背輕輕摸一下自己的手臂皮膚，感覺是？',
-    choices:['溫暖的','涼涼的','粗糙','滑順'] },
-  { name:'你的衣服', label:'衣服布料', color:'#7B9EBE',
-    q:'輕輕搓一下你現在穿的衣服，布料是？',
-    choices:['粗糙','滑順','有彈性','厚實'] },
-  { name:'你坐的椅子', label:'椅子材質', color:'#8B7B6B',
-    q:'用手摸摸你坐的椅子或桌子的表面，材質是？',
-    choices:['木頭','塑膠','金屬','布料'] }
-];
 
 // ==================== NAVIGATION ====================
 function showScreen(id) {
@@ -731,40 +710,76 @@ function goS2() {
   showScreen('s2');
 }
 
-// ==================== STEP 2: HEARING ====================
-function playSound(type) {
-  document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
-  document.getElementById('sc-' + type).classList.add('playing');
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+
+// ==================== STEP 2: HEARING (anonymous guess) ====================
+const SOUND_ORDER = ['forest','ocean','river','rain'];
+const SOUND_NAMES = { forest:'森林', ocean:'海浪', river:'溪流', rain:'雨聲' };
+let anonAudio = null, playingIdx = -1;
+let soundGuessed = [false,false,false,false];
+let soundGuessCount = 0;
+
+function playAnon(i) {
+  if (soundGuessed[i]) return;
+  if (anonAudio) { anonAudio.pause(); anonAudio = null; }
+  document.querySelectorAll('.sound-card').forEach((c,j) => {
+    if (!soundGuessed[j]) c.classList.remove('playing');
+  });
+  playingIdx = i;
+  document.getElementById('sc-'+i).classList.add('playing');
   try {
-    const a = new Audio(SOUND_URLS[type]);
+    const a = new Audio(SOUND_URLS[SOUND_ORDER[i]]);
     a.loop = true; a.volume = 0.75;
-    a.play().catch(() => {});
-    currentAudio = a;
+    a.play().catch(()=>{});
+    anonAudio = a;
   } catch(e) {}
+  document.getElementById('guessPanel').style.display = 'block';
 }
 
-function toggleHear(i) {
-  if (hearChecked[i]) return;
-  hearChecked[i] = true;
-  hearCount++;
-  document.getElementById('hr' + i).classList.add('checked');
-  document.getElementById('hc' + i).textContent = '✓';
-  document.getElementById('hint2').textContent = `已聆聽 ${hearCount} / 4 種聲音`;
-  if (hearCount >= 4) document.getElementById('btn2next').style.display = 'block';
+function submitGuess(answer) {
+  if (playingIdx < 0) return;
+  const i = playingIdx;
+  const correct = SOUND_NAMES[SOUND_ORDER[i]];
+  const card = document.getElementById('sc-'+i);
+  card.classList.remove('playing'); card.classList.add('done');
+  document.getElementById('sg-'+i).textContent = (answer === correct ? '✓ ' : answer + ' → ') + correct;
+  if (anonAudio) { anonAudio.pause(); anonAudio = null; }
+  playingIdx = -1;
+  soundGuessed[i] = true; soundGuessCount++;
+  document.getElementById('hint2').textContent = `已完成 ${soundGuessCount} / 4 種聲音`;
+  document.getElementById('guessPanel').style.display = 'none';
+  if (soundGuessCount >= 4) document.getElementById('btn2next').style.display = 'block';
 }
 
 function goS3() {
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if (anonAudio) { anonAudio.pause(); anonAudio = null; }
   showScreen('s3');
   initAR();
 }
 
-// ==================== STEP 3: TOUCH ====================
-function initAR() {
+// ==================== STEP 3: TOUCH (Camera BG + Three.js 3D) ====================
+let arCamStream = null, arAnimId = null, threeRenderer = null;
+
+const TOUCH_ITEMS = [
+  { label:'手臂皮膚', q:'用手背輕輕摸一下自己的手臂皮膚，感覺是？', choices:['溫暖','涼涼的','粗糙','滑順'] },
+  { label:'衣服布料', q:'輕輕搓一下你現在穿的衣服，布料感覺是？', choices:['粗糙','滑順','有彈性','厚實'] },
+  { label:'椅子表面', q:'用手摸摸你坐的椅子表面，材質是？', choices:['木頭','塑膠','金屬','布料'] }
+];
+
+async function initAR() {
   touchIdx = 0; touchAnswered = [false,false,false];
   renderTouchStep(0);
-  startARCanvas(0);
+  await startARCam();
+  startThreeJS(0);
+}
+
+async function startARCam() {
+  try {
+    arCamStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } }, audio: false
+    });
+    const v = document.getElementById('arVideo');
+    v.srcObject = arCamStream; await v.play();
+  } catch(e) {}
 }
 
 function renderTouchStep(i) {
@@ -772,153 +787,176 @@ function renderTouchStep(i) {
   document.getElementById('arPillLeft').textContent = `物件 ${i+1} / 3`;
   document.getElementById('arPillRight').textContent = item.label;
   document.getElementById('tqText').textContent = item.q;
-  const ch = document.getElementById('tqChoices');
-  ch.innerHTML = '';
-  item.choices.forEach((c, ci) => {
+  const ch = document.getElementById('tqChoices'); ch.innerHTML = '';
+  item.choices.forEach(c => {
     const btn = document.createElement('div');
-    btn.className = 'touch-choice';
-    btn.textContent = c;
+    btn.className = 'touch-choice'; btn.textContent = c;
     btn.onclick = () => selectChoice(i, btn);
     ch.appendChild(btn);
   });
   [0,1,2].forEach(j => {
-    const dot = document.getElementById('tp' + j);
-    dot.className = 'tp-dot' + (j < i ? ' done' : j === i ? ' active' : '');
+    document.getElementById('tp'+j).className = 'tp-dot'+(j<i?' done':j===i?' active':'');
   });
-  const done = touchAnswered.filter(Boolean).length;
-  document.getElementById('hint3').textContent = `已感受 ${done} / 3 種觸感`;
+  document.getElementById('hint3').textContent = `已感受 ${touchAnswered.filter(Boolean).length} / 3 種觸感`;
 }
 
-function selectChoice(itemIdx, btn) {
-  if (touchAnswered[itemIdx]) return;
+function selectChoice(idx, btn) {
+  if (touchAnswered[idx]) return;
   document.querySelectorAll('.touch-choice').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  touchAnswered[itemIdx] = true;
-  const done = touchAnswered.filter(Boolean).length;
-  document.getElementById('hint3').textContent = `已感受 ${done} / 3 種觸感`;
+  touchAnswered[idx] = true;
+  document.getElementById('hint3').textContent = `已感受 ${touchAnswered.filter(Boolean).length} / 3 種觸感`;
   setTimeout(() => {
-    if (touchIdx < 2) { touchIdx++; renderTouchStep(touchIdx); startARCanvas(touchIdx); }
+    if (touchIdx < 2) { touchIdx++; renderTouchStep(touchIdx); startThreeJS(touchIdx); }
     else { document.getElementById('btn3next').style.display = 'block'; }
-  }, 600);
+  }, 700);
 }
 
-function startARCanvas(idx) {
-  const canvas = document.getElementById('arCanvas');
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width || 340;
-  canvas.height = rect.height || 255;
+function startThreeJS(idx) {
   if (arAnimId) cancelAnimationFrame(arAnimId);
-  const ctx = canvas.getContext('2d');
-  const item = TOUCH_ITEMS[idx];
+  if (threeRenderer) { threeRenderer.dispose(); threeRenderer = null; }
+
+  const canvas = document.getElementById('arCanvas');
+  const W = canvas.offsetWidth || 340, H = canvas.offsetHeight || 255;
+  canvas.width = W; canvas.height = H;
+
+  const THREE = window.THREE;
+  if (!THREE) { startARFallback(idx); return; }
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, W/H, 0.1, 100);
+  camera.position.z = 3;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x000000, 0);
+  threeRenderer = renderer;
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+  const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+  dir.position.set(2, 4, 3);
+  scene.add(dir);
+  const rim = new THREE.DirectionalLight(0x88aaff, 0.4);
+  rim.position.set(-3, -1, -2);
+  scene.add(rim);
+
+  let mesh, mesh2, mesh3;
+
+  if (idx === 0) {
+    // 手臂：圓柱體模擬前臂
+    const upper = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.32, 1.6, 32),
+      new THREE.MeshStandardMaterial({ color: 0xd4a882, roughness: 0.8, metalness: 0.0 })
+    );
+    upper.rotation.z = Math.PI / 2;
+    scene.add(upper);
+    // 手腕漸細
+    const wrist = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.20, 0.28, 0.5, 32),
+      new THREE.MeshStandardMaterial({ color: 0xc89870, roughness: 0.8 })
+    );
+    wrist.rotation.z = Math.PI / 2;
+    wrist.position.x = 1.0;
+    scene.add(wrist);
+    // 手肘端
+    const elbow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 32, 16),
+      new THREE.MeshStandardMaterial({ color: 0xc8997f, roughness: 0.85 })
+    );
+    elbow.position.x = -0.85;
+    scene.add(elbow);
+    mesh = upper;
+
+  } else if (idx === 1) {
+    // 衣服：折疊的布料感 - 用扁平圓柱+皺褶
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.9, 0.85, 0.15, 32),
+      new THREE.MeshStandardMaterial({ color: 0x5b7fa6, roughness: 0.95, metalness: 0.0 })
+    );
+    body.rotation.x = Math.PI / 2;
+    scene.add(body);
+    // 領口
+    const collar = new THREE.Mesh(
+      new THREE.TorusGeometry(0.3, 0.07, 16, 32),
+      new THREE.MeshStandardMaterial({ color: 0x4a6d94, roughness: 0.9 })
+    );
+    collar.position.z = 0.08;
+    scene.add(collar);
+    // 皺褶線條
+    [-0.3, 0, 0.3].forEach(x => {
+      const fold = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.02, 1.6, 8),
+        new THREE.MeshStandardMaterial({ color: 0x3d5a7a, roughness: 1.0 })
+      );
+      fold.rotation.x = Math.PI/2; fold.position.x = x; fold.position.z = 0.08;
+      scene.add(fold);
+    });
+    mesh = body;
+
+  } else {
+    // 椅子：完整椅子造型
+    const mat = new THREE.MeshStandardMaterial({ color: 0x8b6b45, roughness: 0.85 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x6b5030, roughness: 0.9 });
+    // 椅座
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 1.4), mat);
+    seat.position.y = -0.2;
+    scene.add(seat);
+    // 椅背
+    const back = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.1, 0.1), mat);
+    back.position.y = 0.45; back.position.z = -0.65;
+    scene.add(back);
+    // 四隻腳
+    [[-0.65,-0.55],[-0.65,0.55],[0.65,-0.55],[0.65,0.55]].forEach(([x,z]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.8,8), darkMat);
+      leg.position.set(x,-0.65,z); scene.add(leg);
+    });
+    // 橫撐
+    const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.3,8), darkMat);
+    rung.rotation.z = Math.PI/2; rung.position.set(0,-0.8,0.55);
+    scene.add(rung);
+    mesh = seat;
+  }
+
   let t = 0;
+  function animate() {
+    arAnimId = requestAnimationFrame(animate);
+    t += 0.012;
+    scene.position.y = Math.sin(t) * 0.08;
+    scene.rotation.y = Math.sin(t * 0.4) * 0.25;
+    renderer.render(scene, camera);
+  }
+  animate();
+}
 
+function startARFallback(idx) {
+  const canvas = document.getElementById('arCanvas');
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#d4a882','#5b7fa6','#8b6b45'];
+  const labels = ['手臂皮膚','衣服布料','椅子表面'];
+  let t = 0;
   function draw() {
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#04060f';
-    ctx.fillRect(0, 0, W, H);
-    t += 0.018;
-    const float = Math.sin(t) * 7;
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 1;
-    for (let gx = 0; gx < W; gx += 30) {
-      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
-    }
-    for (let gy = 0; gy < H; gy += 30) {
-      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
-    }
-
-    // Pulsing rings
-    const cx = W/2, cy = H/2 + float;
-    for (let r = 50; r < 160; r += 35) {
-      const alpha = 0.06 + Math.sin(t + r * 0.05) * 0.04;
-      ctx.strokeStyle = `rgba(210,153,34,${alpha})`;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-    }
-
-    ctx.save();
-    ctx.translate(cx, cy);
-
-    if (idx === 0) {
-      // Arm / skin
-      ctx.fillStyle = item.color;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 68, 32, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(200,168,130,0.7)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.ellipse(0, 0, 68, 32, 0, 0, Math.PI*2); ctx.stroke();
-      // Skin texture lines
-      ctx.strokeStyle = 'rgba(180,140,100,0.35)'; ctx.lineWidth = 0.5;
-      for (let i = -3; i <= 3; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i*18, -28); ctx.lineTo(i*18 + 5, 28); ctx.stroke();
-      }
-      // Label
-      ctx.fillStyle = 'rgba(210,185,150,0.9)';
-      ctx.font = '500 11px "Noto Sans TC", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('輕輕摸你的手臂皮膚', 0, 50);
-
-    } else if (idx === 1) {
-      // Shirt / fabric
-      const w = 90, h = 65;
-      ctx.fillStyle = item.color;
-      ctx.beginPath(); ctx.roundRect(-w/2, -h/2, w, h, 6); ctx.fill();
-      // Fabric weave
-      ctx.strokeStyle = 'rgba(100,140,180,0.25)'; ctx.lineWidth = 0.5;
-      for (let fi = -4; fi <= 4; fi++) {
-        ctx.beginPath(); ctx.moveTo(fi*12, -h/2); ctx.lineTo(fi*12, h/2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-w/2, fi*10); ctx.lineTo(w/2, fi*10); ctx.stroke();
-      }
-      ctx.strokeStyle = 'rgba(123,158,190,0.6)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(-w/2, -h/2, w, h, 6); ctx.stroke();
-      ctx.fillStyle = 'rgba(160,200,235,0.9)';
-      ctx.font = '500 11px "Noto Sans TC", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('搓搓你的衣服布料', 0, 50);
-
-    } else {
-      // Chair
-      ctx.fillStyle = item.color;
-      // Seat
-      ctx.beginPath(); ctx.roundRect(-55, -10, 110, 28, 4); ctx.fill();
-      ctx.strokeStyle = 'rgba(139,123,107,0.6)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(-55, -10, 110, 28, 4); ctx.stroke();
-      // Back
-      ctx.fillStyle = 'rgba(110,95,80,0.9)';
-      ctx.beginPath(); ctx.roundRect(-45, -42, 90, 30, 4); ctx.fill();
-      ctx.strokeStyle = 'rgba(139,123,107,0.5)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(-45, -42, 90, 30, 4); ctx.stroke();
-      // Legs
-      ctx.strokeStyle = 'rgba(100,85,70,0.7)'; ctx.lineWidth = 3;
-      [[-40,18],[-40,18],[40,18],[40,18]].forEach(([lx], li) => {
-        const lxArr = [-40,-20,20,40];
-        ctx.beginPath(); ctx.moveTo(lxArr[li], 18); ctx.lineTo(lxArr[li], 44); ctx.stroke();
-      });
-      ctx.fillStyle = 'rgba(210,190,160,0.9)';
-      ctx.font = '500 11px "Noto Sans TC", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('摸摸你坐的椅子表面', 0, 60);
-    }
-
-    ctx.restore();
-
-    // Scanline overlay
-    const scanY = ((t * 30) % H);
-    ctx.fillStyle = 'rgba(210,153,34,0.06)';
-    ctx.fillRect(0, scanY, W, 2);
-
-    arAnimId = requestAnimationFrame(draw);
+    ctx.clearRect(0,0,W,H);
+    t += 0.02;
+    const cy = H/2 + Math.sin(t)*8;
+    ctx.strokeStyle = `rgba(210,153,34,${0.08+Math.sin(t)*0.03})`;
+    ctx.lineWidth = 0.5;
+    for(let r=60;r<150;r+=30){ctx.beginPath();ctx.arc(W/2,cy,r,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle = colors[idx]; ctx.beginPath(); ctx.arc(W/2,cy,55,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.85)';ctx.font='500 13px "Noto Sans TC",sans-serif';
+    ctx.textAlign='center';ctx.fillText(labels[idx],W/2,cy+80);
+    arAnimId=requestAnimationFrame(draw);
   }
   draw();
 }
 
+
 // ==================== COMPLETE ====================
 function showComplete() {
   if (arAnimId) cancelAnimationFrame(arAnimId);
+  if (threeRenderer) { threeRenderer.dispose(); threeRenderer = null; }
+  if (arCamStream) { arCamStream.getTracks().forEach(t=>t.stop()); arCamStream = null; }
   showScreen('sDone');
 }
 
@@ -927,8 +965,6 @@ function restart() {
   // Reset state
   foundItems = { backpack:false, pen:false, book:false, bottle:false, phone:false };
   foundCount = 0;
-  hearChecked = [false,false,false,false];
-  hearCount = 0;
   touchIdx = 0; touchAnswered = [false,false,false];
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
@@ -954,13 +990,20 @@ function restart() {
   document.getElementById('camVideo').srcObject = null;
   detectCooldown = false;
 
+  if (arAnimId) cancelAnimationFrame(arAnimId);
+  if (threeRenderer) { threeRenderer.dispose(); threeRenderer = null; }
+  if (arCamStream) { arCamStream.getTracks().forEach(t=>t.stop()); arCamStream = null; }
+
   // Reset S2
-  document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
+  soundGuessed = [false,false,false,false]; soundGuessCount = 0; playingIdx = -1;
+  if (anonAudio) { anonAudio.pause(); anonAudio = null; }
   [0,1,2,3].forEach(i => {
-    document.getElementById('hr'+i).classList.remove('checked');
-    document.getElementById('hc'+i).textContent = '✓';
+    const c = document.getElementById('sc-'+i);
+    c.classList.remove('playing','done');
+    document.getElementById('sg-'+i).textContent = '';
   });
-  document.getElementById('hint2').textContent = '已聆聽 0 / 4 種聲音';
+  document.getElementById('guessPanel').style.display = 'none';
+  document.getElementById('hint2').textContent = '已完成 0 / 4 種聲音';
   document.getElementById('btn2next').style.display = 'none';
 
   // Reset S3
