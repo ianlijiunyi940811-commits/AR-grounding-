@@ -349,11 +349,15 @@ async function snapAndDetect(){
   let success=false;
   for(let attempt=1;attempt<=3;attempt++){
     setStatus(attempt===1?'正在分析畫面，請稍候…':`重試中（第 ${attempt} 次）…`);
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),12000);
     try{
       const resp=await fetch('/api/detect',{
-        method:'POST',headers:{'Content-Type':'application/json'},
+        method:'POST', signal:controller.signal,
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({imageBase64:b64,itemsToFind:lookingFor})
       });
+      clearTimeout(timer);
       if(resp.status===503||resp.status===429){
         if(attempt<3){await new Promise(r=>setTimeout(r,2000));continue;}
         throw new Error('AI 伺服器忙碌中，請稍後再試');
@@ -366,7 +370,9 @@ async function snapAndDetect(){
       setStatus(newFound===0?'這次沒偵測到新物品，換個角度再試試':`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
       success=true; break;
     }catch(e){
-      if(attempt===3)setStatus('偵測失敗：'+(e.message||'未知錯誤')+'，請手動點擊確認');
+      clearTimeout(timer);
+      const msg=e.name==='AbortError'?'回應超時，請重試':'偵測失敗：'+(e.message||'未知錯誤');
+      if(attempt===3)setStatus(msg+'，或手動點擊確認');
       else await new Promise(r=>setTimeout(r,2000));
     }
   }
