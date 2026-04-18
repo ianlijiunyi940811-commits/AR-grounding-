@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>STOP 3 — 接地練習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #1c2128;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.16);
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #484f58;
+  --teal: #3fb950;
+  --teal-dim: rgba(63,185,80,0.15);
+  --purple: #a371f7;
+  --purple-dim: rgba(163,113,247,0.15);
+  --amber: #d29922;
+  --amber-dim: rgba(210,153,34,0.15);
+  --blue: #58a6ff;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+.app {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 2rem;
+}
+
+/* Header */
+.header {
+  padding: 1.25rem 1.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.logo-mark {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--purple-dim);
+  border: 0.5px solid var(--purple);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Serif Display', serif;
+  font-size: 15px;
+  color: var(--purple);
+}
+
+.header-text { flex: 1; }
+.header-title { font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: .02em; }
+.header-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* Step bar */
+.step-bar {
+  display: flex;
+  gap: 6px;
+  padding: 0 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.step-pip {
+  flex: 1; height: 2px; border-radius: 2px;
+  background: var(--bg3);
+  transition: background .4s;
+}
+.step-pip.done { background: var(--teal); }
+.step-pip.active { background: var(--purple); }
+
+/* Screens */
+.screen { display: none; flex-direction: column; padding: 0 1.25rem; animation: fadeUp .35s ease; }
+.screen.active { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Sense header */
+.sense-header { margin-bottom: 1.25rem; }
+.sense-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--purple); background: var(--purple-dim);
+  border: 0.5px solid rgba(163,113,247,0.3);
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;
+}
+.sense-badge.teal { color: var(--teal); background: var(--teal-dim); border-color: rgba(63,185,80,0.3); }
+.sense-badge.amber { color: var(--amber); background: var(--amber-dim); border-color: rgba(210,153,34,0.3); }
+.sense-title { font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.3; margin-bottom: 4px; }
+.sense-sub { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+/* Camera */
+.cam-wrapper {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  background: #000;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 1rem;
+}
+.cam-wrapper video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-overlay { position: absolute; inset: 0; pointer-events: none; }
+.cam-status {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); color: var(--text);
+  font-size: 11px; padding: 4px 12px; border-radius: 20px;
+  white-space: nowrap; backdrop-filter: blur(4px);
+}
+.detect-box {
+  position: absolute;
+  border: 1.5px solid var(--teal);
+  border-radius: 4px;
+  transition: all .25s;
+}
+.detect-tag {
+  position: absolute; top: -20px; left: 0;
+  background: var(--teal); color: #000;
+  font-size: 10px; font-weight: 500;
+  padding: 2px 6px; border-radius: 3px;
+  white-space: nowrap;
+}
+.scan-line {
+  position: absolute; left: 0; right: 0;
+  height: 1px; background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  animation: scanMove 2.5s ease-in-out infinite;
+  opacity: 0.6;
+}
+@keyframes scanMove {
+  0% { top: 10%; } 50% { top: 85%; } 100% { top: 10%; }
+}
+
+/* Items list */
+.items-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 1rem; }
+.item-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  user-select: none;
+}
+.item-row:active { transform: scale(0.99); }
+.item-row.found {
+  border-color: rgba(63,185,80,0.5);
+  background: var(--teal-dim);
+}
+.item-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 0.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 12px;
+  transition: background .2s, border-color .2s;
+  color: transparent;
+}
+.item-row.found .item-dot {
+  background: var(--teal); border-color: var(--teal); color: #000;
+}
+.item-name { font-size: 14px; color: var(--text); flex: 1; }
+.item-src { font-size: 11px; color: var(--teal); }
+
+/* Buttons */
+.btn {
+  width: 100%; padding: 13px;
+  font-size: 14px; font-weight: 500;
+  font-family: 'Noto Sans TC', sans-serif;
+  border-radius: var(--radius-sm);
+  cursor: pointer; border: 0.5px solid var(--border2);
+  background: var(--bg2); color: var(--text);
+  transition: background .2s, transform .1s;
+  margin-bottom: .75rem;
+}
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--purple); border-color: var(--purple); color: #fff; }
+.btn.primary:hover { background: #b48bf9; }
+.btn.success { background: var(--teal); border-color: var(--teal); color: #000; }
+.btn.success:hover { background: #4fc562; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn[style*="none"] { display: none !important; }
+
+.progress-hint {
+  font-size: 12px; color: var(--text3);
+  text-align: center; margin-bottom: .75rem;
+}
+
+/* Sound grid */
+.sound-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin-bottom: 1.25rem;
+}
+.sound-card {
+  padding: 16px 12px;
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center; cursor: pointer;
+  transition: all .2s; user-select: none;
+}
+.sound-card:active { transform: scale(0.97); }
+.sound-card.playing {
+  border-color: rgba(163,113,247,0.6);
+  background: var(--purple-dim);
+}
+.sound-emoji { font-size: 32px; line-height: 1; margin-bottom: 8px; display: block; }
+.sound-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.sound-desc { font-size: 11px; color: var(--text2); }
+.sound-playing { font-size: 10px; color: var(--purple); margin-top: 4px; display: none; }
+.sound-card.playing .sound-playing { display: block; }
+
+/* Hear checklist */
+.hear-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 1rem; }
+.hear-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: all .2s; user-select: none;
+}
+.hear-row:active { transform: scale(0.99); }
+.hear-row.checked { border-color: rgba(163,113,247,0.5); background: var(--purple-dim); }
+.hear-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 0.5px solid var(--border2);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: transparent;
+  transition: all .2s;
+}
+.hear-row.checked .hear-check { background: var(--purple); border-color: var(--purple); color: #fff; }
+.hear-label { font-size: 13px; color: var(--text); }
+
+/* AR Stage */
+.ar-stage {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  background: #04060f;
+  overflow: hidden; position: relative;
+  margin-bottom: 1rem;
+}
+#arCanvas { width: 100%; height: 100%; display: block; }
+.ar-hud {
+  position: absolute; top: 10px; left: 10px; right: 10px;
+  display: flex; justify-content: space-between;
+  pointer-events: none;
+}
+.ar-pill {
+  background: rgba(4,6,15,0.75);
+  border: 0.5px solid var(--border2);
+  color: var(--text2); font-size: 10px;
+  padding: 3px 10px; border-radius: 20px;
+  backdrop-filter: blur(6px);
+}
+.ar-pill.accent { color: var(--amber); border-color: rgba(210,153,34,0.4); }
+
+/* Touch question */
+.touch-q-card {
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 1rem;
+  margin-bottom: 1rem;
+}
+.touch-q-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.touch-q-text { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: .75rem; }
+.touch-choices { display: flex; flex-wrap: wrap; gap: 7px; }
+.touch-choice {
+  padding: 7px 14px; border-radius: 20px;
+  border: 0.5px solid var(--border2);
+  font-size: 13px; color: var(--text2);
+  cursor: pointer; background: var(--bg3);
+  font-family: 'Noto Sans TC', sans-serif;
+  transition: all .2s; user-select: none;
+}
+.touch-choice:active { transform: scale(0.96); }
+.touch-choice.selected { background: var(--amber); border-color: var(--amber); color: #000; font-weight: 500; }
+
+.touch-progress { display: flex; gap: 8px; margin-bottom: 1rem; }
+.tp-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--bg3); border: 0.5px solid var(--border2);
+  transition: all .3s;
+}
+.tp-dot.done { background: var(--teal); border-color: var(--teal); }
+.tp-dot.active { background: var(--amber); border-color: var(--amber); }
+
+/* Complete */
+.complete-screen {
+  display: none; flex-direction: column;
+  align-items: center; text-align: center;
+  padding: 3rem 1.5rem;
+  animation: fadeUp .5s ease;
+}
+.complete-screen.active { display: flex; }
+.complete-orb {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: var(--teal-dim);
+  border: 0.5px solid rgba(63,185,80,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+  margin-bottom: 1.5rem;
+  animation: orbPulse 2.5s ease-in-out infinite;
+}
+@keyframes orbPulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.complete-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px; color: var(--text);
+  margin-bottom: .5rem;
+}
+.complete-sub {
+  font-size: 15px; color: var(--text2);
+  line-height: 1.8; margin-bottom: 2rem;
+}
+.complete-tags { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 2rem; }
+.complete-tag {
+  font-size: 12px; padding: 5px 14px; border-radius: 20px;
+  border: 0.5px solid var(--border2); color: var(--text2);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo-mark">S3</div>
+    <div class="header-text">
+      <div class="header-title">STOP 3 接地練習</div>
+      <div class="header-sub">視覺 · 聽覺 · 觸覺</div>
+    </div>
+  </div>
+
+  <!-- Step 1: 視覺 -->
+  <div id="s1" class="screen active">
+    <div class="step-bar">
+      <div class="step-pip active" id="pip1a"></div>
+      <div class="step-pip" id="pip1b"></div>
+      <div class="step-pip" id="pip1c"></div>
+    </div>
+    <div class="sense-header">
+      <div class="sense-badge">Step 1 · 視覺</div>
+      <div class="sense-title">找出 5 樣<br>看得見的東西</div>
+      <div class="sense-sub">把平板鏡頭轉向周圍，讓 AI 自動偵測！也可以直接點擊手動確認。</div>
+    </div>
+
+    <div class="cam-wrapper" id="camWrapper">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <div class="cam-overlay" id="camOverlay">
+        <div class="scan-line" id="scanLine" style="display:none"></div>
+        <div class="cam-status" id="camStatus">點擊下方按鈕開啟鏡頭</div>
+      </div>
+    </div>
+
+    <button class="btn primary" id="camBtn" onclick="startCamera()">開啟鏡頭 · 開始偵測</button>
+
+    <div class="items-list">
+      <div class="item-row" id="ir-backpack" onclick="manualMark('backpack')">
+        <div class="item-dot" id="id-backpack">✓</div>
+        <span class="item-name">書包</span>
+        <span class="item-src" id="is-backpack"></span>
+      </div>
+      <div class="item-row" id="ir-pen" onclick="manualMark('pen')">
+        <div class="item-dot" id="id-pen">✓</div>
+        <span class="item-name">筆</span>
+        <span class="item-src" id="is-pen"></span>
+      </div>
+      <div class="item-row" id="ir-book" onclick="manualMark('book')">
+        <div class="item-dot" id="id-book">✓</div>
+        <span class="item-name">書本</span>
+        <span class="item-src" id="is-book"></span>
+      </div>
+      <div class="item-row" id="ir-bottle" onclick="manualMark('bottle')">
+        <div class="item-dot" id="id-bottle">✓</div>
+        <span class="item-name">水瓶</span>
+        <span class="item-src" id="is-bottle"></span>
+      </div>
+      <div class="item-row" id="ir-phone" onclick="manualMark('phone')">
+        <div class="item-dot" id="id-phone">✓</div>
+        <span class="item-name">手機 · 平板</span>
+        <span class="item-src" id="is-phone"></span>
+      </div>
+    </div>
+
+    <div class="progress-hint" id="hint1">已找到 0 / 5 樣 — 找到所有物品才能繼續</div>
+    <button class="btn success" id="btn1next" style="display:none" onclick="goS2()">下一步：聆聽 →</button>
+  </div>
+
+  <!-- Step 2: 聽覺 -->
+  <div id="s2" class="screen">
+    <div class="step-bar">
+      <div class="step-pip done"></div>
+      <div class="step-pip active"></div>
+      <div class="step-pip"></div>
+    </div>
+    <div class="sense-header">
+      <div class="sense-badge">Step 2 · 聽覺</div>
+      <div class="sense-title">聆聽 4 種聲音</div>
+      <div class="sense-sub">選一個你喜歡的自然音效，靜下來仔細聆聽，然後逐一確認你聽見的聲音。</div>
+    </div>
+
+    <div class="sound-grid">
+      <div class="sound-card" id="sc-forest" onclick="playSound('forest')">
+        <span class="sound-emoji">🌲</span>
+        <div class="sound-name">森林</div>
+        <div class="sound-desc">蟲鳴鳥叫</div>
+        <div class="sound-playing">♪ 播放中</div>
+      </div>
+      <div class="sound-card" id="sc-ocean" onclick="playSound('ocean')">
+        <span class="sound-emoji">🌊</span>
+        <div class="sound-name">海浪</div>
+        <div class="sound-desc">海風浪聲</div>
+        <div class="sound-playing">♪ 播放中</div>
+      </div>
+      <div class="sound-card" id="sc-river" onclick="playSound('river')">
+        <span class="sound-emoji">🏞</span>
+        <div class="sound-name">溪流</div>
+        <div class="sound-desc">潺潺水聲</div>
+        <div class="sound-playing">♪ 播放中</div>
+      </div>
+      <div class="sound-card" id="sc-rain" onclick="playSound('rain')">
+        <span class="sound-emoji">🌧</span>
+        <div class="sound-name">雨聲</div>
+        <div class="sound-desc">輕柔落雨</div>
+        <div class="sound-playing">♪ 播放中</div>
+      </div>
+    </div>
+
+    <div class="hear-list">
+      <div class="hear-row" id="hr0" onclick="toggleHear(0)">
+        <div class="hear-check" id="hc0">✓</div>
+        <span class="hear-label">最明顯的主要聲音</span>
+      </div>
+      <div class="hear-row" id="hr1" onclick="toggleHear(1)">
+        <div class="hear-check" id="hc1">✓</div>
+        <span class="hear-label">遠處的背景音</span>
+      </div>
+      <div class="hear-row" id="hr2" onclick="toggleHear(2)">
+        <div class="hear-check" id="hc2">✓</div>
+        <span class="hear-label">幾乎聽不見的細微音</span>
+      </div>
+      <div class="hear-row" id="hr3" onclick="toggleHear(3)">
+        <div class="hear-check" id="hc3">✓</div>
+        <span class="hear-label">你自己的呼吸聲</span>
+      </div>
+    </div>
+
+    <div class="progress-hint" id="hint2">已聆聽 0 / 4 種聲音</div>
+    <button class="btn success" id="btn2next" style="display:none" onclick="goS3()">下一步：觸覺 →</button>
+  </div>
+
+  <!-- Step 3: 觸覺 -->
+  <div id="s3" class="screen">
+    <div class="step-bar">
+      <div class="step-pip done"></div>
+      <div class="step-pip done"></div>
+      <div class="step-pip active"></div>
+    </div>
+    <div class="sense-header">
+      <div class="sense-badge amber">Step 3 · 觸覺</div>
+      <div class="sense-title">感受 3 種觸感</div>
+      <div class="sense-sub">觀察 AR 畫面出現的物品，用手去感受它，然後選擇你的感受。</div>
+    </div>
+
+    <div class="touch-progress" id="tprog">
+      <div class="tp-dot active" id="tp0"></div>
+      <div class="tp-dot" id="tp1"></div>
+      <div class="tp-dot" id="tp2"></div>
+    </div>
+
+    <div class="ar-stage">
+      <canvas id="arCanvas"></canvas>
+      <div class="ar-hud">
+        <div class="ar-pill" id="arPillLeft">物件 1 / 3</div>
+        <div class="ar-pill accent" id="arPillRight">你的皮膚</div>
+      </div>
+    </div>
+
+    <div class="touch-q-card">
+      <div class="touch-q-label">觸摸提示</div>
+      <div class="touch-q-text" id="tqText">用手背輕輕摸一下自己的手臂皮膚，感覺是？</div>
+      <div class="touch-choices" id="tqChoices"></div>
+    </div>
+
+    <div class="progress-hint" id="hint3">已感受 0 / 3 種觸感</div>
+    <button class="btn success" id="btn3next" style="display:none" onclick="showComplete()">完成練習 ✓</button>
+  </div>
+
+  <!-- Complete -->
+  <div id="sDone" class="complete-screen">
+    <div class="step-bar" style="width:100%;padding:0 1.25rem;margin-bottom:2rem">
+      <div class="step-pip done"></div>
+      <div class="step-pip done"></div>
+      <div class="step-pip done"></div>
+    </div>
+    <div class="complete-orb">🌿</div>
+    <div class="complete-title">你回來了</div>
+    <div class="complete-sub">
+      五感已一一確認<br>
+      視覺告訴你，你在這個空間裡<br>
+      聽覺告訴你，世界是安靜的<br>
+      觸覺告訴你，你的身體是安全的
+    </div>
+    <div class="complete-tags">
+      <span class="complete-tag">✓ 視覺 5 樣</span>
+      <span class="complete-tag">✓ 聽覺 4 種</span>
+      <span class="complete-tag">✓ 觸覺 3 種</span>
+    </div>
+    <button class="btn primary" onclick="restart()">重新練習</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script>
+// ==================== STATE ====================
+let model = null, camStream = null, detecting = false;
+let foundItems = { backpack:false, pen:false, book:false, bottle:false, phone:false };
+let foundCount = 0;
+let currentAudio = null;
+let hearChecked = [false,false,false,false];
+let hearCount = 0;
+let touchIdx = 0;
+let touchAnswered = [false,false,false];
+let arAnimId = null;
+
+const LABEL_MAP = {
+  backpack: ['backpack'],
+  pen:      ['pen','pencil'],
+  book:     ['book'],
+  bottle:   ['bottle','cup'],
+  phone:    ['cell phone','laptop','tablet','remote']
+};
+
+const SOUND_URLS = {
+  forest: 'Forest.mp3',
+  ocean:  'Ocean.mp3',
+  river:  'river.mp3',
+  rain:   'Rain.mp3'
+};
+
+const TOUCH_ITEMS = [
+  { name:'你的皮膚', label:'皮膚', color:'#C8A882',
+    q:'用手背輕輕摸一下自己的手臂皮膚，感覺是？',
+    choices:['溫暖的','涼涼的','粗糙','滑順'] },
+  { name:'你的衣服', label:'衣服布料', color:'#7B9EBE',
+    q:'輕輕搓一下你現在穿的衣服，布料是？',
+    choices:['粗糙','滑順','有彈性','厚實'] },
+  { name:'你坐的椅子', label:'椅子材質', color:'#8B7B6B',
+    q:'用手摸摸你坐的椅子或桌子的表面，材質是？',
+    choices:['木頭','塑膠','金屬','布料'] }
+];
+
+// ==================== NAVIGATION ====================
+function showScreen(id) {
+  document.querySelectorAll('.screen, .complete-screen').forEach(s => {
+    s.classList.remove('active');
+  });
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ==================== STEP 1: VISION ====================
+async function startCamera() {
+  const btn = document.getElementById('camBtn');
+  btn.textContent = '正在開啟鏡頭…';
+  btn.disabled = true;
+  setStatus('請稍候，開啟鏡頭中…');
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+      audio: false
+    });
+    const vid = document.getElementById('camVideo');
+    vid.srcObject = camStream;
+    await vid.play();
+    btn.style.display = 'none';
+    document.getElementById('scanLine').style.display = 'block';
+    setStatus('載入 AI 模型中，請稍候…');
+    if (!model) model = await cocoSsd.load();
+    setStatus('偵測中 — 把物品移到鏡頭前');
+    detecting = true;
+    detectLoop();
+  } catch(e) {
+    btn.textContent = '無法開啟鏡頭，請點擊物品手動確認';
+    btn.disabled = false;
+    setStatus('請使用手動點擊方式確認物品');
+  }
+}
+
+function setStatus(msg) {
+  document.getElementById('camStatus').textContent = msg;
+}
+
+async function detectLoop() {
+  if (!detecting) return;
+  const vid = document.getElementById('camVideo');
+  if (vid.readyState >= 2) {
+    try {
+      const preds = await model.detect(vid);
+      drawDetections(preds);
+    } catch(e) {}
+  }
+  setTimeout(detectLoop, 500);
+}
+
+function drawDetections(preds) {
+  const overlay = document.getElementById('camOverlay');
+  overlay.querySelectorAll('.detect-box').forEach(b => b.remove());
+  const vid = document.getElementById('camVideo');
+  const dispW = vid.offsetWidth, dispH = vid.offsetHeight;
+  const natW = vid.videoWidth || 640, natH = vid.videoHeight || 480;
+  const sx = dispW / natW, sy = dispH / natH;
+
+  preds.forEach(p => {
+    if (p.score < 0.35) return;
+    const [x,y,w,h] = p.bbox;
+    const box = document.createElement('div');
+    box.className = 'detect-box';
+    box.style.cssText = `left:${x*sx}px;top:${y*sy}px;width:${w*sx}px;height:${h*sy}px`;
+    const tag = document.createElement('div');
+    tag.className = 'detect-tag';
+    tag.textContent = `${p.class} ${Math.round(p.score*100)}%`;
+    box.appendChild(tag);
+    overlay.appendChild(box);
+
+    Object.entries(LABEL_MAP).forEach(([key, labels]) => {
+      if (!foundItems[key] && labels.some(l => p.class.toLowerCase().includes(l)) && p.score > 0.4) {
+        markFound(key, 'AI 偵測 ✓');
+      }
+    });
+  });
+}
+
+function markFound(key, src) {
+  if (foundItems[key]) return;
+  foundItems[key] = true;
+  foundCount++;
+  const row = document.getElementById('ir-' + key);
+  row.classList.add('found');
+  document.getElementById('id-' + key).textContent = '✓';
+  document.getElementById('is-' + key).textContent = src;
+  document.getElementById('hint1').textContent = `已找到 ${foundCount} / 5 樣`;
+  if (foundCount >= 5) {
+    detecting = false;
+    document.getElementById('scanLine').style.display = 'none';
+    setStatus('全部找到了！太棒了 🎉');
+    document.getElementById('btn1next').style.display = 'block';
+    document.getElementById('hint1').textContent = '全部找到！點下方繼續';
+  }
+}
+
+function manualMark(key) {
+  if (!foundItems[key]) markFound(key, '手動確認');
+}
+
+function goS2() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  detecting = false;
+  showScreen('s2');
+}
+
+// ==================== STEP 2: HEARING ====================
+function playSound(type) {
+  document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
+  document.getElementById('sc-' + type).classList.add('playing');
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  try {
+    const a = new Audio(SOUND_URLS[type]);
+    a.loop = true; a.volume = 0.75;
+    a.play().catch(() => {});
+    currentAudio = a;
+  } catch(e) {}
+}
+
+function toggleHear(i) {
+  if (hearChecked[i]) return;
+  hearChecked[i] = true;
+  hearCount++;
+  document.getElementById('hr' + i).classList.add('checked');
+  document.getElementById('hc' + i).textContent = '✓';
+  document.getElementById('hint2').textContent = `已聆聽 ${hearCount} / 4 種聲音`;
+  if (hearCount >= 4) document.getElementById('btn2next').style.display = 'block';
+}
+
+function goS3() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  showScreen('s3');
+  initAR();
+}
+
+// ==================== STEP 3: TOUCH ====================
+function initAR() {
+  touchIdx = 0; touchAnswered = [false,false,false];
+  renderTouchStep(0);
+  startARCanvas(0);
+}
+
+function renderTouchStep(i) {
+  const item = TOUCH_ITEMS[i];
+  document.getElementById('arPillLeft').textContent = `物件 ${i+1} / 3`;
+  document.getElementById('arPillRight').textContent = item.label;
+  document.getElementById('tqText').textContent = item.q;
+  const ch = document.getElementById('tqChoices');
+  ch.innerHTML = '';
+  item.choices.forEach((c, ci) => {
+    const btn = document.createElement('div');
+    btn.className = 'touch-choice';
+    btn.textContent = c;
+    btn.onclick = () => selectChoice(i, btn);
+    ch.appendChild(btn);
+  });
+  [0,1,2].forEach(j => {
+    const dot = document.getElementById('tp' + j);
+    dot.className = 'tp-dot' + (j < i ? ' done' : j === i ? ' active' : '');
+  });
+  const done = touchAnswered.filter(Boolean).length;
+  document.getElementById('hint3').textContent = `已感受 ${done} / 3 種觸感`;
+}
+
+function selectChoice(itemIdx, btn) {
+  if (touchAnswered[itemIdx]) return;
+  document.querySelectorAll('.touch-choice').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  touchAnswered[itemIdx] = true;
+  const done = touchAnswered.filter(Boolean).length;
+  document.getElementById('hint3').textContent = `已感受 ${done} / 3 種觸感`;
+  setTimeout(() => {
+    if (touchIdx < 2) { touchIdx++; renderTouchStep(touchIdx); startARCanvas(touchIdx); }
+    else { document.getElementById('btn3next').style.display = 'block'; }
+  }, 600);
+}
+
+function startARCanvas(idx) {
+  const canvas = document.getElementById('arCanvas');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width || 340;
+  canvas.height = rect.height || 255;
+  if (arAnimId) cancelAnimationFrame(arAnimId);
+  const ctx = canvas.getContext('2d');
+  const item = TOUCH_ITEMS[idx];
+  let t = 0;
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#04060f';
+    ctx.fillRect(0, 0, W, H);
+    t += 0.018;
+    const float = Math.sin(t) * 7;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx < W; gx += 30) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for (let gy = 0; gy < H; gy += 30) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+
+    // Pulsing rings
+    const cx = W/2, cy = H/2 + float;
+    for (let r = 50; r < 160; r += 35) {
+      const alpha = 0.06 + Math.sin(t + r * 0.05) * 0.04;
+      ctx.strokeStyle = `rgba(210,153,34,${alpha})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    }
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    if (idx === 0) {
+      // Arm / skin
+      ctx.fillStyle = item.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 68, 32, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(200,168,130,0.7)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(0, 0, 68, 32, 0, 0, Math.PI*2); ctx.stroke();
+      // Skin texture lines
+      ctx.strokeStyle = 'rgba(180,140,100,0.35)'; ctx.lineWidth = 0.5;
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i*18, -28); ctx.lineTo(i*18 + 5, 28); ctx.stroke();
+      }
+      // Label
+      ctx.fillStyle = 'rgba(210,185,150,0.9)';
+      ctx.font = '500 11px "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('輕輕摸你的手臂皮膚', 0, 50);
+
+    } else if (idx === 1) {
+      // Shirt / fabric
+      const w = 90, h = 65;
+      ctx.fillStyle = item.color;
+      ctx.beginPath(); ctx.roundRect(-w/2, -h/2, w, h, 6); ctx.fill();
+      // Fabric weave
+      ctx.strokeStyle = 'rgba(100,140,180,0.25)'; ctx.lineWidth = 0.5;
+      for (let fi = -4; fi <= 4; fi++) {
+        ctx.beginPath(); ctx.moveTo(fi*12, -h/2); ctx.lineTo(fi*12, h/2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-w/2, fi*10); ctx.lineTo(w/2, fi*10); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(123,158,190,0.6)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(-w/2, -h/2, w, h, 6); ctx.stroke();
+      ctx.fillStyle = 'rgba(160,200,235,0.9)';
+      ctx.font = '500 11px "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('搓搓你的衣服布料', 0, 50);
+
+    } else {
+      // Chair
+      ctx.fillStyle = item.color;
+      // Seat
+      ctx.beginPath(); ctx.roundRect(-55, -10, 110, 28, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(139,123,107,0.6)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(-55, -10, 110, 28, 4); ctx.stroke();
+      // Back
+      ctx.fillStyle = 'rgba(110,95,80,0.9)';
+      ctx.beginPath(); ctx.roundRect(-45, -42, 90, 30, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(139,123,107,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(-45, -42, 90, 30, 4); ctx.stroke();
+      // Legs
+      ctx.strokeStyle = 'rgba(100,85,70,0.7)'; ctx.lineWidth = 3;
+      [[-40,18],[-40,18],[40,18],[40,18]].forEach(([lx], li) => {
+        const lxArr = [-40,-20,20,40];
+        ctx.beginPath(); ctx.moveTo(lxArr[li], 18); ctx.lineTo(lxArr[li], 44); ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(210,190,160,0.9)';
+      ctx.font = '500 11px "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('摸摸你坐的椅子表面', 0, 60);
+    }
+
+    ctx.restore();
+
+    // Scanline overlay
+    const scanY = ((t * 30) % H);
+    ctx.fillStyle = 'rgba(210,153,34,0.06)';
+    ctx.fillRect(0, scanY, W, 2);
+
+    arAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ==================== COMPLETE ====================
+function showComplete() {
+  if (arAnimId) cancelAnimationFrame(arAnimId);
+  showScreen('sDone');
+}
+
+// ==================== RESTART ====================
+function restart() {
+  // Reset state
+  foundItems = { backpack:false, pen:false, book:false, bottle:false, phone:false };
+  foundCount = 0;
+  hearChecked = [false,false,false,false];
+  hearCount = 0;
+  touchIdx = 0; touchAnswered = [false,false,false];
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  detecting = false;
+
+  // Reset S1
+  ['backpack','pen','book','bottle','phone'].forEach(k => {
+    document.getElementById('ir-'+k).classList.remove('found');
+    document.getElementById('id-'+k).textContent = '✓';
+    document.getElementById('is-'+k).textContent = '';
+  });
+  document.getElementById('hint1').textContent = '已找到 0 / 5 樣 — 找到所有物品才能繼續';
+  document.getElementById('btn1next').style.display = 'none';
+  const camBtn = document.getElementById('camBtn');
+  camBtn.style.display = 'block'; camBtn.textContent = '開啟鏡頭 · 開始偵測'; camBtn.disabled = false;
+  document.getElementById('camStatus').textContent = '點擊下方按鈕開啟鏡頭';
+  document.getElementById('scanLine').style.display = 'none';
+  document.getElementById('camVideo').srcObject = null;
+
+  // Reset S2
+  document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
+  [0,1,2,3].forEach(i => {
+    document.getElementById('hr'+i).classList.remove('checked');
+    document.getElementById('hc'+i).textContent = '✓';
+  });
+  document.getElementById('hint2').textContent = '已聆聽 0 / 4 種聲音';
+  document.getElementById('btn2next').style.display = 'none';
+
+  // Reset S3
+  document.getElementById('hint3').textContent = '已感受 0 / 3 種觸感';
+  document.getElementById('btn3next').style.display = 'none';
+
+  showScreen('s1');
+}
+</script>
+</body>
+</html>
