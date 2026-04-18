@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const prompt = `請仔細看這張圖片，判斷畫面中是否有以下物品（只找清楚、明確在畫面前景的物品，不要猜測背景模糊物品）：${itemsToFind}。請只回傳 JSON，不要有任何其他文字，格式如下，true 代表清楚看到，false 代表沒有或不確定：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +36,8 @@ export default async function handler(req, res) {
           }],
           generationConfig: {
             temperature: 0,
-            maxOutputTokens: 100
+            maxOutputTokens: 150,
+            responseMimeType: 'application/json'
           }
         })
       }
@@ -46,12 +47,18 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const msg = data.error?.message || `Gemini API error ${response.status}`;
-      return res.status(response.status).json({ error: msg });
+      console.error('Gemini error:', JSON.stringify(data));
+      return res.status(response.status).json({ error: msg, detail: data.error });
     }
 
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const match = raw.match(/\{[^}]+\}/);
-    const result = match ? JSON.parse(match[0]) : {};
+    let result = {};
+    try {
+      const match = raw.match(/\{[\s\S]*?\}/);
+      result = match ? JSON.parse(match[0]) : {};
+    } catch(parseErr) {
+      console.error('JSON parse error:', raw);
+    }
 
     return res.status(200).json({ result });
 
