@@ -130,6 +130,16 @@ body {
   font-size: 11px; padding: 4px 12px; border-radius: 20px;
   white-space: nowrap; backdrop-filter: blur(4px);
 }
+.cam-flip-btn {
+  position: absolute; top: 10px; right: 10px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); border: 0.5px solid var(--border2);
+  color: var(--text); font-size: 18px;
+  display: none; align-items: center; justify-content: center;
+  cursor: pointer; backdrop-filter: blur(4px);
+  transition: background .2s;
+}
+.cam-flip-btn:active { background: rgba(255,255,255,0.15); }
 .detect-box {
   position: absolute;
   border: 1.5px solid var(--teal);
@@ -372,6 +382,7 @@ body {
       <div class="cam-overlay" id="camOverlay">
         <div class="scan-line" id="scanLine" style="display:none"></div>
         <div class="cam-status" id="camStatus">點擊下方按鈕開啟鏡頭</div>
+        <div class="cam-flip-btn" id="flipBtn" onclick="flipCamera()" title="切換前後鏡頭">⇄</div>
       </div>
     </div>
 
@@ -539,6 +550,7 @@ body {
 <script>
 // ==================== STATE ====================
 let camStream = null, detecting = false, detectCooldown = false;
+let currentFacingMode = 'environment';
 let foundItems = { backpack:false, pen:false, book:false, bottle:false, phone:false };
 let foundCount = 0;
 let currentAudio = null;
@@ -584,24 +596,41 @@ async function startCamera() {
   btn.textContent = '正在開啟鏡頭…';
   btn.disabled = true;
   setStatus('請稍候，開啟鏡頭中…');
+  await openCam(currentFacingMode);
+}
+
+async function openCam(facingMode) {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
   try {
     camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+      video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 } },
       audio: false
     });
     const vid = document.getElementById('camVideo');
     vid.srcObject = camStream;
     await vid.play();
-    btn.style.display = 'none';
+    document.getElementById('camBtn').style.display = 'none';
     document.getElementById('scanLine').style.display = 'block';
-    setStatus('鏡頭已開啟！點「拍照偵測」讓 AI 分析畫面');
     document.getElementById('snapBtn').style.display = 'block';
+    const flipBtn = document.getElementById('flipBtn');
+    flipBtn.style.display = 'flex';
+    setStatus('鏡頭已開啟！點「拍照偵測」讓 AI 分析畫面');
     detecting = true;
   } catch(e) {
+    const btn = document.getElementById('camBtn');
     btn.textContent = '無法開啟鏡頭，請點擊物品手動確認';
     btn.disabled = false;
     setStatus('請使用手動點擊方式確認物品');
   }
+}
+
+async function flipCamera() {
+  currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+  const flipBtn = document.getElementById('flipBtn');
+  flipBtn.style.opacity = '0.4';
+  setStatus(currentFacingMode === 'user' ? '切換為前鏡頭…' : '切換為後鏡頭…');
+  await openCam(currentFacingMode);
+  flipBtn.style.opacity = '1';
 }
 
 function setStatus(msg) {
@@ -631,41 +660,30 @@ async function snapAndDetect() {
     const itemList = { backpack:'書包', pen:'筆（原子筆、鉛筆等）', book:'書本（課本、筆記本等）', bottle:'水瓶', phone:'手機或平板' };
     const lookingFor = unfound.map(k => itemList[k]).join('、');
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/detect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
-            { type: 'text', text: `請仔細看這張圖片，判斷畫面中是否有以下物品（只找清楚、明確在畫面前景的物品，不要猜測背景模糊物品）：${lookingFor}。請只回傳 JSON，格式如下，true 代表清楚看到，false 代表沒有或不確定：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}` }
-          ]
-        }]
-      })
+      body: JSON.stringify({ imageBase64: b64, itemsToFind: lookingFor })
     });
 
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
+
     const data = await resp.json();
-    const raw = data.content?.[0]?.text || '{}';
-    const match = raw.match(/\{[^}]+\}/);
-    if (match) {
-      const result = JSON.parse(match[0]);
-      let newFound = 0;
-      ITEM_KEYS.forEach(k => {
-        if (!foundItems[k] && result[k] === true) {
-          markFound(k, 'AI 偵測 ✓');
-          newFound++;
-        }
-      });
-      if (newFound === 0) {
-        setStatus('這次沒偵測到新物品，換個角度再試試');
-      } else {
-        setStatus(`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
+    const result = data.result || {};
+    let newFound = 0;
+    ITEM_KEYS.forEach(k => {
+      if (!foundItems[k] && result[k] === true) {
+        markFound(k, 'AI 偵測 ✓');
+        newFound++;
       }
+    });
+    if (newFound === 0) {
+      setStatus('這次沒偵測到新物品，換個角度再試試');
     } else {
-      setStatus('分析完成，請繼續拍攝其他物品');
+      setStatus(`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
     }
   } catch(e) {
     setStatus('偵測失敗，請手動點擊物品確認，或重試');
@@ -916,11 +934,13 @@ function restart() {
   });
   document.getElementById('hint1').textContent = '已找到 0 / 5 樣 — 找到所有物品才能繼續';
   document.getElementById('btn1next').style.display = 'none';
+  currentFacingMode = 'environment';
   const camBtn = document.getElementById('camBtn');
   camBtn.style.display = 'block'; camBtn.textContent = '開啟鏡頭 · 開始偵測'; camBtn.disabled = false;
   document.getElementById('snapBtn').style.display = 'none';
   document.getElementById('snapBtn').disabled = false;
   document.getElementById('snapBtn').textContent = '拍照偵測 — 讓 AI 分析畫面';
+  document.getElementById('flipBtn').style.display = 'none';
   document.getElementById('camStatus').textContent = '點擊下方按鈕開啟鏡頭';
   document.getElementById('scanLine').style.display = 'none';
   document.getElementById('camVideo').srcObject = null;
