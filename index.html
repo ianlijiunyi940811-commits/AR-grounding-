@@ -376,6 +376,7 @@ body {
     </div>
 
     <button class="btn primary" id="camBtn" onclick="startCamera()">開啟鏡頭 · 開始偵測</button>
+    <button class="btn" id="snapBtn" onclick="snapAndDetect()" style="display:none">拍照偵測 — 讓 AI 分析畫面</button>
 
     <div class="items-list">
       <div class="item-row" id="ir-backpack" onclick="manualMark('backpack')">
@@ -534,11 +535,10 @@ body {
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
 <script>
 // ==================== STATE ====================
-let model = null, camStream = null, detecting = false;
+let camStream = null, detecting = false, detectCooldown = false;
 let foundItems = { backpack:false, pen:false, book:false, bottle:false, phone:false };
 let foundCount = 0;
 let currentAudio = null;
@@ -548,13 +548,7 @@ let touchIdx = 0;
 let touchAnswered = [false,false,false];
 let arAnimId = null;
 
-const LABEL_MAP = {
-  backpack: ['backpack'],
-  pen:      ['pen','pencil'],
-  book:     ['book'],
-  bottle:   ['bottle','cup'],
-  phone:    ['cell phone','laptop','tablet','remote']
-};
+const ITEM_KEYS = ['backpack','pen','book','bottle','phone'];
 
 const SOUND_URLS = {
   forest: 'Forest.mp3',
@@ -584,7 +578,7 @@ function showScreen(id) {
   window.scrollTo(0,0);
 }
 
-// ==================== STEP 1: VISION ====================
+// ==================== STEP 1: VISION (Claude Vision) ====================
 async function startCamera() {
   const btn = document.getElementById('camBtn');
   btn.textContent = '正在開啟鏡頭…';
@@ -600,11 +594,9 @@ async function startCamera() {
     await vid.play();
     btn.style.display = 'none';
     document.getElementById('scanLine').style.display = 'block';
-    setStatus('載入 AI 模型中，請稍候…');
-    if (!model) model = await cocoSsd.load();
-    setStatus('偵測中 — 把物品移到鏡頭前');
+    setStatus('鏡頭已開啟！點「拍照偵測」讓 AI 分析畫面');
+    document.getElementById('snapBtn').style.display = 'block';
     detecting = true;
-    detectLoop();
   } catch(e) {
     btn.textContent = '無法開啟鏡頭，請點擊物品手動確認';
     btn.disabled = false;
@@ -616,44 +608,72 @@ function setStatus(msg) {
   document.getElementById('camStatus').textContent = msg;
 }
 
-async function detectLoop() {
-  if (!detecting) return;
+function captureFrame() {
   const vid = document.getElementById('camVideo');
-  if (vid.readyState >= 2) {
-    try {
-      const preds = await model.detect(vid);
-      drawDetections(preds);
-    } catch(e) {}
-  }
-  setTimeout(detectLoop, 500);
+  const canvas = document.createElement('canvas');
+  canvas.width = vid.videoWidth || 640;
+  canvas.height = vid.videoHeight || 480;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 }
 
-function drawDetections(preds) {
-  const overlay = document.getElementById('camOverlay');
-  overlay.querySelectorAll('.detect-box').forEach(b => b.remove());
-  const vid = document.getElementById('camVideo');
-  const dispW = vid.offsetWidth, dispH = vid.offsetHeight;
-  const natW = vid.videoWidth || 640, natH = vid.videoHeight || 480;
-  const sx = dispW / natW, sy = dispH / natH;
+async function snapAndDetect() {
+  if (detectCooldown) return;
+  detectCooldown = true;
+  const snapBtn = document.getElementById('snapBtn');
+  snapBtn.textContent = 'AI 分析中…';
+  snapBtn.disabled = true;
+  setStatus('正在分析畫面，請稍候…');
 
-  preds.forEach(p => {
-    if (p.score < 0.35) return;
-    const [x,y,w,h] = p.bbox;
-    const box = document.createElement('div');
-    box.className = 'detect-box';
-    box.style.cssText = `left:${x*sx}px;top:${y*sy}px;width:${w*sx}px;height:${h*sy}px`;
-    const tag = document.createElement('div');
-    tag.className = 'detect-tag';
-    tag.textContent = `${p.class} ${Math.round(p.score*100)}%`;
-    box.appendChild(tag);
-    overlay.appendChild(box);
+  try {
+    const b64 = captureFrame();
+    const unfound = ITEM_KEYS.filter(k => !foundItems[k]);
+    const itemList = { backpack:'書包', pen:'筆（原子筆、鉛筆等）', book:'書本（課本、筆記本等）', bottle:'水瓶', phone:'手機或平板' };
+    const lookingFor = unfound.map(k => itemList[k]).join('、');
 
-    Object.entries(LABEL_MAP).forEach(([key, labels]) => {
-      if (!foundItems[key] && labels.some(l => p.class.toLowerCase().includes(l)) && p.score > 0.4) {
-        markFound(key, 'AI 偵測 ✓');
-      }
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+            { type: 'text', text: `請仔細看這張圖片，判斷畫面中是否有以下物品（只找清楚、明確在畫面前景的物品，不要猜測背景模糊物品）：${lookingFor}。請只回傳 JSON，格式如下，true 代表清楚看到，false 代表沒有或不確定：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}` }
+          ]
+        }]
+      })
     });
-  });
+
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const match = raw.match(/\{[^}]+\}/);
+    if (match) {
+      const result = JSON.parse(match[0]);
+      let newFound = 0;
+      ITEM_KEYS.forEach(k => {
+        if (!foundItems[k] && result[k] === true) {
+          markFound(k, 'AI 偵測 ✓');
+          newFound++;
+        }
+      });
+      if (newFound === 0) {
+        setStatus('這次沒偵測到新物品，換個角度再試試');
+      } else {
+        setStatus(`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
+      }
+    } else {
+      setStatus('分析完成，請繼續拍攝其他物品');
+    }
+  } catch(e) {
+    setStatus('偵測失敗，請手動點擊物品確認，或重試');
+  }
+
+  snapBtn.textContent = '拍照偵測';
+  snapBtn.disabled = false;
+  setTimeout(() => { detectCooldown = false; }, 2000);
 }
 
 function markFound(key, src) {
@@ -668,6 +688,7 @@ function markFound(key, src) {
   if (foundCount >= 5) {
     detecting = false;
     document.getElementById('scanLine').style.display = 'none';
+    document.getElementById('snapBtn').style.display = 'none';
     setStatus('全部找到了！太棒了 🎉');
     document.getElementById('btn1next').style.display = 'block';
     document.getElementById('hint1').textContent = '全部找到！點下方繼續';
@@ -897,9 +918,13 @@ function restart() {
   document.getElementById('btn1next').style.display = 'none';
   const camBtn = document.getElementById('camBtn');
   camBtn.style.display = 'block'; camBtn.textContent = '開啟鏡頭 · 開始偵測'; camBtn.disabled = false;
+  document.getElementById('snapBtn').style.display = 'none';
+  document.getElementById('snapBtn').disabled = false;
+  document.getElementById('snapBtn').textContent = '拍照偵測 — 讓 AI 分析畫面';
   document.getElementById('camStatus').textContent = '點擊下方按鈕開啟鏡頭';
   document.getElementById('scanLine').style.display = 'none';
   document.getElementById('camVideo').srcObject = null;
+  detectCooldown = false;
 
   // Reset S2
   document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('playing'));
