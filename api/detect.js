@@ -19,27 +19,37 @@ export default async function handler(req, res) {
 
     let response, data;
     for(let attempt=1; attempt<=3; attempt++){
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
-                { text: prompt }
-              ]
-            }],
-            generationConfig: { temperature: 0, maxOutputTokens: 150 }
-          })
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try{
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
+                  { text: prompt }
+                ]
+              }],
+              generationConfig: { temperature: 0, maxOutputTokens: 150 }
+            })
+          }
+        );
+        clearTimeout(timer);
+        data = await response.json();
+        if(response.status === 503 || response.status === 429){
+          if(attempt < 3){ await new Promise(r => setTimeout(r, 2000)); continue; }
         }
-      );
-      data = await response.json();
-      if(response.status === 503 || response.status === 429){
+        break;
+      }catch(fetchErr){
+        clearTimeout(timer);
         if(attempt < 3){ await new Promise(r => setTimeout(r, 2000)); continue; }
+        throw new Error(fetchErr.name === 'AbortError' ? 'AI 回應超時，請重試' : fetchErr.message);
       }
-      break;
     }
 
     if (!response.ok) {
