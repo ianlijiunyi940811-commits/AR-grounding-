@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const prompt = `請仔細看這張圖片，判斷畫面中是否有以下物品（只找清楚、明確在畫面前景的物品，不要猜測背景模糊物品）：${itemsToFind}。請只回傳 JSON，不要有任何其他文字，格式如下，true 代表清楚看到，false 代表沒有或不確定：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,8 +36,7 @@ export default async function handler(req, res) {
           }],
           generationConfig: {
             temperature: 0,
-            maxOutputTokens: 150,
-            responseMimeType: 'application/json'
+            maxOutputTokens: 150
           }
         })
       }
