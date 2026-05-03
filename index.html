@@ -61,12 +61,77 @@ html,body{height:100%;overflow:hidden;background:#000;font-family:'Noto Sans TC'
 .pip{width:28px;height:3px;border-radius:2px;background:rgba(255,255,255,0.2)}
 .pip.done{background:var(--teal)}.pip.active{background:var(--purple)}
 
-/* ── BOTTOM PANEL ── */
-.bottom-panel{
+/* ── BOTTOM DRAWER (Step 1) ── */
+.drawer{
   position:fixed;bottom:0;left:0;right:0;z-index:20;
-  padding:16px 16px calc(env(safe-area-inset-bottom,16px) + 16px);
-  background:linear-gradient(to top,rgba(0,0,0,0.85) 60%,transparent 100%);
+  transition:transform .35s cubic-bezier(.32,.72,0,1);
 }
+.drawer-handle-area{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 16px 6px;
+  background:linear-gradient(to top,rgba(0,0,0,0.0) 0%,transparent 100%);
+  cursor:pointer;
+}
+.drawer-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.4);margin-bottom:8px}
+.drawer-peek{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4px 8px;
+}
+.drawer-progress-text{font-size:15px;font-weight:600;color:#fff}
+.drawer-chevron{font-size:18px;color:rgba(255,255,255,0.6);transition:transform .3s}
+.drawer.open .drawer-chevron{transform:rotate(180deg)}
+
+.drawer-body{
+  background:rgba(10,12,16,0.94);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid rgba(255,255,255,0.12);
+  padding:0 12px calc(env(safe-area-inset-bottom,16px) + 12px);
+  max-height:55vh;overflow-y:auto;
+}
+/* collapsed: only show buttons, no list */
+.drawer:not(.open) .drawer-body{display:none}
+.drawer:not(.open) .drawer-handle-area{
+  background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%);
+  padding-bottom:0;
+}
+
+/* Progress dots row */
+.prog-dots{
+  display:flex;gap:8px;padding:12px 4px 4px;
+}
+.prog-dot{
+  flex:1;height:40px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);
+  font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);
+  cursor:pointer;transition:all .2s;user-select:none;
+}
+.prog-dot:active{transform:scale(0.95)}
+.prog-dot.found{background:rgba(63,185,80,0.2);border-color:rgba(63,185,80,0.6);color:var(--teal)}
+.prog-dot-check{font-size:16px}
+
+.drawer-items{display:flex;flex-direction:column;gap:4px;padding:4px 0 8px}
+.item-row{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 12px;border-radius:14px;
+  cursor:pointer;user-select:none;
+  transition:background .15s;
+}
+.item-row:active{background:rgba(255,255,255,0.06)}
+.item-row.found{background:rgba(63,185,80,0.12)}
+.item-circle{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(255,255,255,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:transparent;
+  transition:all .2s;
+}
+.item-row.found .item-circle{background:var(--teal);border-color:var(--teal);color:#000}
+.item-label{font-size:16px;font-weight:500;color:#fff;flex:1}
+.item-tag{font-size:12px;color:var(--teal);font-weight:600}
+
+/* snap / next buttons inside drawer */
+.drawer-btns{padding:8px 0 4px;display:flex;flex-direction:column;gap:8px}
 
 /* ── BIG BUTTONS ── */
 .btn{
@@ -262,6 +327,7 @@ html,body{height:100%;overflow:hidden;background:#000;font-family:'Noto Sans TC'
 
 <!-- ═══════════════ STEP 1 ═══════════════ -->
 <div id="s1" class="screen active">
+  <!-- TOP HUD -->
   <div class="hud">
     <div class="hud-badge">Step 1 · 視覺</div>
     <div class="hud-title">找出 5 樣看得見的東西</div>
@@ -270,44 +336,57 @@ html,body{height:100%;overflow:hidden;background:#000;font-family:'Noto Sans TC'
     </div>
   </div>
 
-  <div style="flex:1"></div>
+  <!-- BOTTOM DRAWER -->
+  <div class="drawer" id="drawer">
 
-  <div class="bottom-panel">
-    <div class="status-bar" id="camStatus">點擊下方按鈕開啟鏡頭</div>
-
-    <div class="items-card" id="itemsCard">
-      <div class="item-row" id="ir-backpack" onclick="manualMark('backpack')">
-        <div class="item-circle" id="ic-backpack">✓</div>
-        <span class="item-label">書包</span>
-        <span class="item-tag" id="it-backpack"></span>
-      </div>
-      <div class="item-row" id="ir-pen" onclick="manualMark('pen')">
-        <div class="item-circle" id="ic-pen">✓</div>
-        <span class="item-label">筆</span>
-        <span class="item-tag" id="it-pen"></span>
-      </div>
-      <div class="item-row" id="ir-book" onclick="manualMark('book')">
-        <div class="item-circle" id="ic-book">✓</div>
-        <span class="item-label">書本</span>
-        <span class="item-tag" id="it-book"></span>
-      </div>
-      <div class="item-row" id="ir-bottle" onclick="manualMark('bottle')">
-        <div class="item-circle" id="ic-bottle">✓</div>
-        <span class="item-label">水瓶</span>
-        <span class="item-tag" id="it-bottle"></span>
-      </div>
-      <div class="item-row" id="ir-phone" onclick="manualMark('phone')">
-        <div class="item-circle" id="ic-phone">✓</div>
-        <span class="item-label">手機 · 平板</span>
-        <span class="item-tag" id="it-phone"></span>
+    <!-- HANDLE — always visible, tap to open/close -->
+    <div class="drawer-handle-area" onclick="toggleDrawer()">
+      <div class="drawer-handle"></div>
+      <div class="drawer-peek">
+        <span class="drawer-progress-text" id="hint1">已找到 0 / 5 樣 — 點此展開清單</span>
+        <span class="drawer-chevron">⌃</span>
       </div>
     </div>
 
-    <div class="progress-hint" id="hint1">已找到 0 / 5 樣</div>
+    <!-- ALWAYS-VISIBLE BUTTONS -->
+    <div style="padding:0 12px 8px;display:flex;flex-direction:column;gap:8px" id="drawerBtns">
+      <button class="btn btn-white" id="camBtn" onclick="startCamera()">開啟鏡頭開始偵測</button>
+      <button class="btn btn-outline" id="snapBtn" onclick="snapAndDetect()" style="display:none">拍照 — 讓 AI 辨識</button>
+      <button class="btn btn-success" id="btn1next" onclick="goS2()" style="display:none">找到全部了！繼續 →</button>
+    </div>
 
-    <button class="btn btn-white" id="camBtn" onclick="startCamera()">開啟鏡頭開始偵測</button>
-    <button class="btn btn-outline" id="snapBtn" onclick="snapAndDetect()" style="display:none">拍照 — 讓 AI 辨識</button>
-    <button class="btn btn-success" id="btn1next" onclick="goS2()" style="display:none">找到全部了！繼續 →</button>
+    <!-- COLLAPSIBLE BODY -->
+    <div class="drawer-body">
+      <div class="status-bar" id="camStatus" style="margin:8px 0">點擊上方按鈕開啟鏡頭</div>
+      <div class="drawer-items">
+        <div class="item-row" id="ir-backpack" onclick="manualMark('backpack')">
+          <div class="item-circle" id="ic-backpack">✓</div>
+          <span class="item-label">書包</span>
+          <span class="item-tag" id="it-backpack"></span>
+        </div>
+        <div class="item-row" id="ir-pen" onclick="manualMark('pen')">
+          <div class="item-circle" id="ic-pen">✓</div>
+          <span class="item-label">筆</span>
+          <span class="item-tag" id="it-pen"></span>
+        </div>
+        <div class="item-row" id="ir-book" onclick="manualMark('book')">
+          <div class="item-circle" id="ic-book">✓</div>
+          <span class="item-label">書本</span>
+          <span class="item-tag" id="it-book"></span>
+        </div>
+        <div class="item-row" id="ir-bottle" onclick="manualMark('bottle')">
+          <div class="item-circle" id="ic-bottle">✓</div>
+          <span class="item-label">水瓶</span>
+          <span class="item-tag" id="it-bottle"></span>
+        </div>
+        <div class="item-row" id="ir-phone" onclick="manualMark('phone')">
+          <div class="item-circle" id="ic-phone">✓</div>
+          <span class="item-label">手機 · 平板</span>
+          <span class="item-tag" id="it-phone"></span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -441,8 +520,22 @@ function showScreen(id){
   window.scrollTo(0,0);
 }
 
+// ═══════ DRAWER ═══════
+let drawerOpen=false;
+function toggleDrawer(){
+  drawerOpen=!drawerOpen;
+  document.getElementById('drawer').classList.toggle('open',drawerOpen);
+}
+function openDrawer(){
+  drawerOpen=true;
+  document.getElementById('drawer').classList.add('open');
+}
+
 // ═══════ STEP 1 ═══════
-function setStatus(m){document.getElementById('camStatus').textContent=m;}
+function setStatus(m){
+  const el=document.getElementById('camStatus');
+  if(el)el.textContent=m;
+}
 
 async function startCamera(){
   const btn=document.getElementById('camBtn');
@@ -539,13 +632,15 @@ function markFound(key,src){
   document.getElementById('ir-'+key).classList.add('found');
   document.getElementById('ic-'+key).textContent='✓';
   document.getElementById('it-'+key).textContent=src;
-  document.getElementById('hint1').textContent=`已找到 ${foundCount} / 5 樣`;
+  const hintText = foundCount>=5 ? '✓ 全部找到！' : `已找到 ${foundCount} / 5 樣 — 點此展開清單`;
+  document.getElementById('hint1').textContent=hintText;
+  // auto-open drawer so student sees the tick
+  openDrawer();
   if(foundCount>=5){
     document.getElementById('scanLine').classList.remove('active');
     document.getElementById('snapBtn').style.display='none';
     document.getElementById('btn1next').style.display='flex';
     setStatus('全部找到了！太棒了 🎉');
-    document.getElementById('hint1').textContent='✓ 全部找到！';
   }
 }
 function manualMark(k){if(!foundItems[k])markFound(k,'手動');}
@@ -749,8 +844,10 @@ function restart(){
     document.getElementById('ic-'+k).textContent='✓';
     document.getElementById('it-'+k).textContent='';
   });
-  document.getElementById('hint1').textContent='已找到 0 / 5 樣';
-  document.getElementById('camStatus').textContent='點擊下方按鈕開啟鏡頭';
+  document.getElementById('hint1').textContent='已找到 0 / 5 樣 — 點此展開清單';
+  document.getElementById('camStatus').textContent='點擊上方按鈕開啟鏡頭';
+  drawerOpen=false;
+  document.getElementById('drawer').classList.remove('open');
   const cb=document.getElementById('camBtn');
   cb.style.display='flex'; cb.disabled=false; cb.textContent='開啟鏡頭開始偵測';
   document.getElementById('snapBtn').style.display='none';
