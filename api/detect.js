@@ -1,3 +1,11 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -8,18 +16,26 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
-  const { imageBase64, itemsToFind } = req.body || {};
-  if (!imageBase64 || !itemsToFind) return res.status(400).json({ error: 'Missing params' });
+  // Safely parse body — handles both pre-parsed object and raw string
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch(e) { return res.status(400).json({ error: 'Invalid JSON body' }); }
+  }
+  if (!body) return res.status(400).json({ error: 'Empty request body' });
+
+  const { imageBase64, itemsToFind } = body;
+  if (!imageBase64) return res.status(400).json({ error: 'Missing imageBase64' });
+  if (!itemsToFind) return res.status(400).json({ error: 'Missing itemsToFind' });
 
   const prompt = `請仔細看這張圖片，判斷畫面中是否有以下物品（只找清楚在畫面前景的物品，不要猜測背景模糊物品）：${itemsToFind}。只回傳 JSON，不要其他文字：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}`;
 
   let response, data;
   for (let attempt = 1; attempt <= 3; attempt++) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
+    const timer = setTimeout(() => controller.abort(), 20000);
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           signal: controller.signal,
@@ -35,13 +51,17 @@ export default async function handler(req, res) {
       );
       clearTimeout(timer);
       data = await response.json();
-      if (response.status === 503 || response.status === 429) {
-        if (attempt < 3) { await new Promise(r => setTimeout(r, 2000)); continue; }
+      if (response.status === 429) {
+        // Rate limited — tell frontend to wait, don't burn more quota retrying
+        return res.status(429).json({ error: '額度暫時用完，請等 30 秒後再試', retryAfter: 30 });
+      }
+      if (response.status === 503) {
+        if (attempt < 3) { await new Promise(r => setTimeout(r, 4000)); continue; }
       }
       break;
     } catch (err) {
       clearTimeout(timer);
-      if (attempt < 3) { await new Promise(r => setTimeout(r, 2000)); continue; }
+      if (attempt < 3) { await new Promise(r => setTimeout(r, 4000)); continue; }
       return res.status(500).json({ error: err.name === 'AbortError' ? 'Gemini timeout' : err.message });
     }
   }
