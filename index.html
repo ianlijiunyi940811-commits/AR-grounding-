@@ -4,241 +4,397 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>STOP 3 — 接地練習</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;
-  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.16);
+  --border:rgba(255,255,255,0.1);
   --text:#e6edf3;--text2:#8b949e;--text3:#484f58;
-  --teal:#3fb950;--teal-dim:rgba(63,185,80,0.15);
-  --purple:#a371f7;--purple-dim:rgba(163,113,247,0.15);
-  --amber:#d29922;--amber-dim:rgba(210,153,34,0.15);
-  --radius:12px;--radius-sm:8px;
+  --teal:#3fb950;--teal-dim:rgba(63,185,80,0.18);
+  --purple:#a371f7;--purple-dim:rgba(163,113,247,0.18);
+  --amber:#e6a817;--amber-dim:rgba(230,168,23,0.18);
+  --red:#f85149;
+  --btn-h:60px;--btn-r:14px;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
-.app{width:100%;max-width:480px;min-height:100vh;display:flex;flex-direction:column;padding:0 0 2rem}
-.header{padding:1.25rem 1.25rem 0;display:flex;align-items:center;gap:10px;margin-bottom:1rem}
-.logo-mark{width:32px;height:32px;border-radius:8px;background:var(--purple-dim);border:0.5px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:15px;color:var(--purple)}
-.header-text{flex:1}
-.header-title{font-size:13px;font-weight:500;color:var(--text);letter-spacing:.02em}
-.header-sub{font-size:11px;color:var(--text3);margin-top:1px}
-.step-bar{display:flex;gap:6px;padding:0 1.25rem;margin-bottom:1.5rem}
-.step-pip{flex:1;height:2px;border-radius:2px;background:var(--bg3);transition:background .4s}
-.step-pip.done{background:var(--teal)}.step-pip.active{background:var(--purple)}
-.screen{display:none;flex-direction:column;padding:0 1.25rem;animation:fadeUp .35s ease}
+html,body{height:100%;overflow:hidden;background:#000;font-family:'Noto Sans TC',sans-serif;color:var(--text)}
+
+/* ── FULLSCREEN CAMERA LAYER ── */
+#camLayer{
+  position:fixed;inset:0;z-index:0;
+  background:#000;display:flex;align-items:center;justify-content:center;
+}
+#camVideo{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ── SCREENS over camera ── */
+.screen{
+  position:fixed;inset:0;z-index:10;
+  display:none;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;
+}
 .screen.active{display:flex}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.sense-header{margin-bottom:1.25rem}
-.sense-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--purple);background:var(--purple-dim);border:0.5px solid rgba(163,113,247,0.3);padding:3px 10px;border-radius:20px;margin-bottom:8px}
-.sense-badge.amber{color:var(--amber);background:var(--amber-dim);border-color:rgba(210,153,34,0.3)}
-.sense-title{font-size:22px;font-weight:500;color:var(--text);line-height:1.3;margin-bottom:4px}
-.sense-sub{font-size:13px;color:var(--text2);line-height:1.5}
 
-/* Camera */
-.cam-wrapper{width:100%;aspect-ratio:4/3;border-radius:var(--radius);border:0.5px solid var(--border);background:#000;overflow:hidden;position:relative;margin-bottom:1rem}
-.cam-wrapper video{width:100%;height:100%;object-fit:cover;display:block}
-.cam-overlay{position:absolute;inset:0;pointer-events:none}
-.cam-status{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:var(--text);font-size:11px;padding:4px 12px;border-radius:20px;white-space:nowrap}
-/* FIX: flip button must be OUTSIDE .cam-overlay (pointer-events:none kills it) */
-.cam-flip-btn{position:absolute;top:10px;right:10px;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.65);border:1.5px solid rgba(255,255,255,0.35);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:30;pointer-events:auto;transition:background .15s,transform .1s}
-.cam-flip-btn:active{background:rgba(255,255,255,0.25);transform:scale(0.88)}
-.cam-flip-btn svg{width:22px;height:22px;pointer-events:none}
-.scan-line{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);animation:scanMove 2.5s ease-in-out infinite;opacity:0.6}
-@keyframes scanMove{0%{top:10%}50%{top:85%}100%{top:10%}}
-.detect-box{position:absolute;border:1.5px solid var(--teal);border-radius:4px;transition:all .25s}
-.detect-tag{position:absolute;top:-20px;left:0;background:var(--teal);color:#000;font-size:10px;font-weight:500;padding:2px 6px;border-radius:3px;white-space:nowrap}
+/* ── GLASS CARD ── */
+.glass{
+  background:rgba(13,17,23,0.82);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:20px;
+}
 
-/* Items */
-.items-list{display:flex;flex-direction:column;gap:7px;margin-bottom:1rem}
-.item-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .2s,background .2s;user-select:none}
-.item-row:active{transform:scale(0.99)}.item-row.found{border-color:rgba(63,185,80,0.5);background:var(--teal-dim)}
-.item-dot{width:22px;height:22px;border-radius:50%;border:0.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:background .2s,border-color .2s;color:transparent}
-.item-row.found .item-dot{background:var(--teal);border-color:var(--teal);color:#000}
-.item-name{font-size:14px;color:var(--text);flex:1}.item-src{font-size:11px;color:var(--teal)}
+/* ── TOP HUD ── */
+.hud{
+  position:fixed;top:0;left:0;right:0;z-index:20;
+  padding:env(safe-area-inset-top,16px) 16px 12px;
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.7) 0%,transparent 100%);
+}
+.hud-badge{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:4px 12px;border-radius:20px;
+  background:var(--purple-dim);border:1px solid rgba(163,113,247,0.4);color:var(--purple);
+}
+.hud-badge.teal{background:var(--teal-dim);border-color:rgba(63,185,80,0.4);color:var(--teal)}
+.hud-badge.amber{background:var(--amber-dim);border-color:rgba(230,168,23,0.4);color:var(--amber)}
+.hud-title{flex:1;font-size:14px;font-weight:500;color:#fff}
+.pip-row{display:flex;gap:5px}
+.pip{width:28px;height:3px;border-radius:2px;background:rgba(255,255,255,0.2)}
+.pip.done{background:var(--teal)}.pip.active{background:var(--purple)}
 
-/* Buttons */
-.btn{width:100%;padding:13px;font-size:14px;font-weight:500;font-family:'Noto Sans TC',sans-serif;border-radius:var(--radius-sm);cursor:pointer;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);transition:background .2s,transform .1s;margin-bottom:.75rem}
-.btn:active{transform:scale(0.98)}.btn.primary{background:var(--purple);border-color:var(--purple);color:#fff}
-.btn.success{background:var(--teal);border-color:var(--teal);color:#000}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.progress-hint{font-size:12px;color:var(--text3);text-align:center;margin-bottom:.75rem}
+/* ── BOTTOM PANEL ── */
+.bottom-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:20;
+  padding:16px 16px calc(env(safe-area-inset-bottom,16px) + 16px);
+  background:linear-gradient(to top,rgba(0,0,0,0.85) 60%,transparent 100%);
+}
 
-/* Sound grid - anonymous */
-.sound-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem}
-.sound-card{padding:18px 12px 14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;transition:all .2s;user-select:none;display:flex;flex-direction:column;align-items:center;gap:8px}
-.sound-card:active{transform:scale(0.96)}.sound-card.playing{border-color:rgba(163,113,247,0.7);background:var(--purple-dim)}.sound-card.done{border-color:rgba(63,185,80,0.5);background:var(--teal-dim)}
-.sound-number{font-size:26px;font-weight:500;color:var(--text);line-height:1}
-.sound-wave{display:flex;align-items:flex-end;gap:3px;height:24px}
-.sound-wave span{display:block;width:4px;border-radius:2px;background:var(--text3);height:6px;transition:background .2s}
+/* ── BIG BUTTONS ── */
+.btn{
+  width:100%;height:var(--btn-h);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:'Noto Sans TC',sans-serif;font-size:17px;font-weight:700;
+  border-radius:var(--btn-r);border:none;cursor:pointer;
+  transition:transform .12s,opacity .15s;
+  letter-spacing:.02em;
+}
+.btn:active{transform:scale(0.96)}
+.btn + .btn{margin-top:10px}
+
+/* Button variants — always high contrast */
+.btn-primary{background:#7c3aed;color:#fff;box-shadow:0 4px 20px rgba(124,58,237,0.45)}
+.btn-success{background:#16a34a;color:#fff;box-shadow:0 4px 20px rgba(22,163,74,0.45)}
+.btn-white{background:#fff;color:#111;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+.btn-outline{background:rgba(255,255,255,0.12);color:#fff;border:2px solid rgba(255,255,255,0.5);backdrop-filter:blur(8px)}
+.btn-amber{background:#d97706;color:#fff;box-shadow:0 4px 20px rgba(217,119,6,0.45)}
+.btn:disabled{opacity:.35;pointer-events:none}
+
+/* ── STATUS BAR ── */
+.status-bar{
+  margin-bottom:12px;
+  padding:10px 16px;border-radius:12px;
+  background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.15);
+  font-size:14px;color:#fff;text-align:center;
+  backdrop-filter:blur(8px);
+}
+
+/* ── ITEMS LIST (floating card) ── */
+.items-card{
+  margin-bottom:12px;padding:6px;
+  border-radius:18px;
+  background:rgba(13,17,23,0.88);
+  border:1px solid rgba(255,255,255,0.12);
+  backdrop-filter:blur(14px);
+}
+.item-row{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 14px;border-radius:13px;
+  cursor:pointer;user-select:none;
+  transition:background .15s;
+}
+.item-row:active{background:rgba(255,255,255,0.06)}
+.item-row.found{background:rgba(63,185,80,0.15)}
+.item-circle{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(255,255,255,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:transparent;
+  transition:all .2s;
+}
+.item-row.found .item-circle{background:var(--teal);border-color:var(--teal);color:#000}
+.item-label{font-size:16px;font-weight:500;color:#fff;flex:1}
+.item-tag{font-size:12px;color:var(--teal);font-weight:500}
+
+/* flip btn */
+.flip-btn{
+  position:fixed;top:calc(env(safe-area-inset-top,16px) + 60px);right:16px;z-index:25;
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.4);
+  display:none;align-items:center;justify-content:center;cursor:pointer;
+  backdrop-filter:blur(8px);transition:transform .1s,background .15s;
+}
+.flip-btn:active{background:rgba(255,255,255,0.2);transform:scale(0.9)}
+.flip-btn svg{width:24px;height:24px;pointer-events:none}
+
+/* scan line */
+.scan-line{
+  position:fixed;left:0;right:0;height:2px;z-index:15;
+  background:linear-gradient(90deg,transparent,var(--teal),transparent);
+  animation:scanMove 2.5s ease-in-out infinite;opacity:0;pointer-events:none;
+}
+.scan-line.active{opacity:0.7}
+@keyframes scanMove{0%{top:15%}50%{top:80%}100%{top:15%}}
+
+/* progress hint */
+.progress-hint{
+  text-align:center;font-size:13px;color:rgba(255,255,255,0.55);
+  margin-bottom:10px;font-weight:500;
+}
+
+/* ══════════════════════ STEP 2: SOUND ══════════════════════ */
+.s2-wrap{
+  flex:1;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,16px) + 64px) 16px 0;
+}
+.sound-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sound-card{
+  aspect-ratio:1;border-radius:18px;
+  background:rgba(13,17,23,0.85);border:2px solid rgba(255,255,255,0.15);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;cursor:pointer;user-select:none;
+  transition:border-color .2s,background .2s,transform .1s;
+  backdrop-filter:blur(12px);
+}
+.sound-card:active{transform:scale(0.95)}
+.sound-card.playing{border-color:var(--purple);background:rgba(163,113,247,0.18)}
+.sound-card.done{border-color:var(--teal);background:rgba(63,185,80,0.15)}
+.sound-num{font-size:36px;font-weight:700;color:#fff;line-height:1}
+.sound-wave{display:flex;align-items:flex-end;gap:4px;height:28px}
+.sound-wave span{display:block;width:5px;border-radius:3px;background:rgba(255,255,255,0.25);height:6px}
 .sound-card.playing .sound-wave span{background:var(--purple)}
 .sound-card.done .sound-wave span{background:var(--teal)}
-.sound-card.playing .sound-wave span:nth-child(1){animation:bar 0.8s ease-in-out infinite 0.0s}
-.sound-card.playing .sound-wave span:nth-child(2){animation:bar 0.8s ease-in-out infinite 0.15s}
-.sound-card.playing .sound-wave span:nth-child(3){animation:bar 0.8s ease-in-out infinite 0.3s}
-.sound-card.playing .sound-wave span:nth-child(4){animation:bar 0.8s ease-in-out infinite 0.15s}
-.sound-card.playing .sound-wave span:nth-child(5){animation:bar 0.8s ease-in-out infinite 0.0s}
-@keyframes bar{0%,100%{height:4px}50%{height:20px}}
-.sound-guess{font-size:12px;color:var(--teal);min-height:16px;font-weight:500}
-.guess-panel{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
-.guess-label{font-size:12px;color:var(--text2);margin-bottom:.75rem;text-align:center}
-.guess-choices{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.guess-btn{padding:12px 8px;font-size:14px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s}
-.guess-btn:active{background:var(--purple-dim);border-color:var(--purple);transform:scale(0.97)}
+.sound-card.playing .sound-wave span:nth-child(1){animation:bar .8s ease-in-out infinite 0s}
+.sound-card.playing .sound-wave span:nth-child(2){animation:bar .8s ease-in-out infinite .15s}
+.sound-card.playing .sound-wave span:nth-child(3){animation:bar .8s ease-in-out infinite .3s}
+.sound-card.playing .sound-wave span:nth-child(4){animation:bar .8s ease-in-out infinite .15s}
+.sound-card.playing .sound-wave span:nth-child(5){animation:bar .8s ease-in-out infinite 0s}
+@keyframes bar{0%,100%{height:4px}50%{height:24px}}
+.sound-result{font-size:13px;font-weight:600;color:var(--teal);min-height:18px;text-align:center}
 
-/* AR Stage */
-.ar-stage{width:100%;aspect-ratio:4/3;border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden;position:relative;margin-bottom:1rem;background:#000}
-#arVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.6}
-#arCanvas{position:absolute;inset:0;width:100%;height:100%}
-.ar-hud{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;pointer-events:none;z-index:10}
-.ar-pill{background:rgba(4,6,15,0.75);border:0.5px solid var(--border2);color:var(--text2);font-size:10px;padding:3px 10px;border-radius:20px}
-.ar-pill.accent{color:var(--amber);border-color:rgba(210,153,34,0.4)}
+.guess-sheet{
+  border-radius:20px;padding:16px;
+  background:rgba(13,17,23,0.92);border:1px solid rgba(255,255,255,0.15);
+  backdrop-filter:blur(16px);margin-bottom:12px;
+}
+.guess-label{font-size:14px;color:rgba(255,255,255,0.6);text-align:center;margin-bottom:12px}
+.guess-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.guess-btn{
+  height:54px;border-radius:12px;
+  background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.25);
+  font-family:'Noto Sans TC',sans-serif;font-size:16px;font-weight:600;color:#fff;
+  cursor:pointer;transition:all .15s;
+}
+.guess-btn:active{background:rgba(255,255,255,0.25);transform:scale(0.96)}
 
-/* Touch */
-.touch-q-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
-.touch-q-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
-.touch-q-text{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:.75rem}
-.touch-choices{display:flex;flex-wrap:wrap;gap:7px}
-.touch-choice{padding:7px 14px;border-radius:20px;border:0.5px solid var(--border2);font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg3);font-family:'Noto Sans TC',sans-serif;transition:all .2s;user-select:none}
-.touch-choice:active{transform:scale(0.96)}.touch-choice.selected{background:var(--amber);border-color:var(--amber);color:#000;font-weight:500}
-.touch-progress{display:flex;gap:8px;margin-bottom:1rem}
-.tp-dot{width:10px;height:10px;border-radius:50%;background:var(--bg3);border:0.5px solid var(--border2);transition:all .3s}
-.tp-dot.done{background:var(--teal);border-color:var(--teal)}.tp-dot.active{background:var(--amber);border-color:var(--amber)}
+/* ══════════════════════ STEP 3: AR TOUCH ══════════════════════ */
+#arVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0.55}
+#arCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:5;pointer-events:none}
+.s3-wrap{
+  flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 16px calc(env(safe-area-inset-bottom,16px) + 16px);
+  position:relative;z-index:10;
+}
+.touch-progress{display:flex;gap:8px;margin-bottom:14px;justify-content:center}
+.tp-dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.3);transition:all .3s}
+.tp-dot.done{background:var(--teal);border-color:var(--teal)}
+.tp-dot.active{background:var(--amber);border-color:var(--amber);transform:scale(1.2)}
 
-/* Complete */
-.complete-screen{display:none;flex-direction:column;align-items:center;text-align:center;padding:3rem 1.5rem;animation:fadeUp .5s ease}
-.complete-screen.active{display:flex}
-.complete-orb{width:100px;height:100px;border-radius:50%;background:var(--teal-dim);border:0.5px solid rgba(63,185,80,0.4);display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:1.5rem;animation:orbPulse 2.5s ease-in-out infinite}
-@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-.complete-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);margin-bottom:.5rem}
-.complete-sub{font-size:15px;color:var(--text2);line-height:1.8;margin-bottom:2rem}
-.complete-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
-.complete-tag{font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid var(--border2);color:var(--text2)}
+.touch-card{
+  border-radius:20px;padding:18px;
+  background:rgba(13,17,23,0.9);border:1px solid rgba(255,255,255,0.15);
+  backdrop-filter:blur(16px);margin-bottom:12px;
+}
+.touch-card-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.touch-card-q{font-size:16px;color:#fff;line-height:1.6;margin-bottom:14px}
+.choices-row{display:flex;flex-wrap:wrap;gap:8px}
+.choice-chip{
+  padding:10px 18px;border-radius:30px;
+  background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.3);
+  font-family:'Noto Sans TC',sans-serif;font-size:15px;font-weight:500;color:#fff;
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.choice-chip:active{transform:scale(0.93)}
+.choice-chip.selected{background:#d97706;border-color:#d97706;color:#fff}
+
+/* ══════════════════════ COMPLETE ══════════════════════ */
+.complete-wrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 24px;text-align:center;
+  background:rgba(13,17,23,0.92);
+}
+.complete-orb{
+  width:120px;height:120px;border-radius:50%;margin-bottom:24px;
+  background:rgba(63,185,80,0.2);border:2px solid rgba(63,185,80,0.5);
+  display:flex;align-items:center;justify-content:center;font-size:56px;
+  animation:pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(63,185,80,0.3)}50%{transform:scale(1.04);box-shadow:0 0 0 16px rgba(63,185,80,0)}}
+.complete-title{font-family:'DM Serif Display',serif;font-size:32px;color:#fff;margin-bottom:10px}
+.complete-sub{font-size:15px;color:rgba(255,255,255,0.6);line-height:1.8;margin-bottom:28px}
+.complete-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:32px}
+.complete-tag{font-size:13px;padding:6px 16px;border-radius:20px;background:rgba(63,185,80,0.15);border:1px solid rgba(63,185,80,0.4);color:var(--teal);font-weight:500}
 </style>
 </head>
 <body>
-<div class="app">
 
-  <div class="header">
-    <div class="logo-mark">S3</div>
-    <div class="header-text">
-      <div class="header-title">STOP 3 接地練習</div>
-      <div class="header-sub">視覺 · 聽覺 · 觸覺</div>
+<!-- FULLSCREEN CAMERA BACKGROUND (Step 1) -->
+<div id="camLayer">
+  <video id="camVideo" autoplay playsinline muted></video>
+</div>
+<div class="scan-line" id="scanLine"></div>
+
+<!-- FLIP BUTTON -->
+<div class="flip-btn" id="flipBtn" onclick="flipCamera()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 7h-9"/><path d="M14 17H5"/>
+    <polyline points="17 4 20 7 17 10"/><polyline points="8 14 5 17 8 20"/>
+  </svg>
+</div>
+
+<!-- ═══════════════ STEP 1 ═══════════════ -->
+<div id="s1" class="screen active">
+  <div class="hud">
+    <div class="hud-badge">Step 1 · 視覺</div>
+    <div class="hud-title">找出 5 樣看得見的東西</div>
+    <div class="pip-row">
+      <div class="pip active"></div><div class="pip"></div><div class="pip"></div>
     </div>
   </div>
 
-  <!-- Step 1 -->
-  <div id="s1" class="screen active">
-    <div class="step-bar"><div class="step-pip active"></div><div class="step-pip"></div><div class="step-pip"></div></div>
-    <div class="sense-header">
-      <div class="sense-badge">Step 1 · 視覺</div>
-      <div class="sense-title">找出 5 樣<br>看得見的東西</div>
-      <div class="sense-sub">把鏡頭對準物品，讓 AI 自動偵測！也可以手動點擊確認。</div>
-    </div>
-    <div class="cam-wrapper" id="camWrapper">
-      <video id="camVideo" autoplay playsinline muted></video>
-      <div class="cam-overlay" id="camOverlay">
-        <div class="scan-line" id="scanLine" style="display:none"></div>
-        <div class="cam-status" id="camStatus">點擊下方按鈕開啟鏡頭</div>
+  <div style="flex:1"></div>
+
+  <div class="bottom-panel">
+    <div class="status-bar" id="camStatus">點擊下方按鈕開啟鏡頭</div>
+
+    <div class="items-card" id="itemsCard">
+      <div class="item-row" id="ir-backpack" onclick="manualMark('backpack')">
+        <div class="item-circle" id="ic-backpack">✓</div>
+        <span class="item-label">書包</span>
+        <span class="item-tag" id="it-backpack"></span>
       </div>
-      <!-- IMPORTANT: flip button is sibling of overlay, not child, so pointer-events work -->
-      <div class="cam-flip-btn" id="flipBtn" onclick="flipCamera()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 7h-9"/><path d="M14 17H5"/>
-          <polyline points="17 4 20 7 17 10"/><polyline points="8 14 5 17 8 20"/>
-        </svg>
+      <div class="item-row" id="ir-pen" onclick="manualMark('pen')">
+        <div class="item-circle" id="ic-pen">✓</div>
+        <span class="item-label">筆</span>
+        <span class="item-tag" id="it-pen"></span>
+      </div>
+      <div class="item-row" id="ir-book" onclick="manualMark('book')">
+        <div class="item-circle" id="ic-book">✓</div>
+        <span class="item-label">書本</span>
+        <span class="item-tag" id="it-book"></span>
+      </div>
+      <div class="item-row" id="ir-bottle" onclick="manualMark('bottle')">
+        <div class="item-circle" id="ic-bottle">✓</div>
+        <span class="item-label">水瓶</span>
+        <span class="item-tag" id="it-bottle"></span>
+      </div>
+      <div class="item-row" id="ir-phone" onclick="manualMark('phone')">
+        <div class="item-circle" id="ic-phone">✓</div>
+        <span class="item-label">手機 · 平板</span>
+        <span class="item-tag" id="it-phone"></span>
       </div>
     </div>
-    <button class="btn primary" id="camBtn" onclick="startCamera()">開啟鏡頭 · 開始偵測</button>
-    <button class="btn" id="snapBtn" onclick="snapAndDetect()" style="display:none">拍照偵測 — 讓 AI 分析畫面</button>
-    <div class="items-list">
-      <div class="item-row" id="ir-backpack" onclick="manualMark('backpack')"><div class="item-dot" id="id-backpack">✓</div><span class="item-name">書包</span><span class="item-src" id="is-backpack"></span></div>
-      <div class="item-row" id="ir-pen" onclick="manualMark('pen')"><div class="item-dot" id="id-pen">✓</div><span class="item-name">筆</span><span class="item-src" id="is-pen"></span></div>
-      <div class="item-row" id="ir-book" onclick="manualMark('book')"><div class="item-dot" id="id-book">✓</div><span class="item-name">書本</span><span class="item-src" id="is-book"></span></div>
-      <div class="item-row" id="ir-bottle" onclick="manualMark('bottle')"><div class="item-dot" id="id-bottle">✓</div><span class="item-name">水瓶</span><span class="item-src" id="is-bottle"></span></div>
-      <div class="item-row" id="ir-phone" onclick="manualMark('phone')"><div class="item-dot" id="id-phone">✓</div><span class="item-name">手機 · 平板</span><span class="item-src" id="is-phone"></span></div>
+
+    <div class="progress-hint" id="hint1">已找到 0 / 5 樣</div>
+
+    <button class="btn btn-white" id="camBtn" onclick="startCamera()">開啟鏡頭開始偵測</button>
+    <button class="btn btn-outline" id="snapBtn" onclick="snapAndDetect()" style="display:none">拍照 — 讓 AI 辨識</button>
+    <button class="btn btn-success" id="btn1next" onclick="goS2()" style="display:none">找到全部了！繼續 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════ STEP 2 ═══════════════ -->
+<div id="s2" class="screen" style="background:var(--bg)">
+  <div class="hud">
+    <div class="hud-badge teal">Step 2 · 聽覺</div>
+    <div class="hud-title">猜猜這是什麼聲音？</div>
+    <div class="pip-row">
+      <div class="pip done"></div><div class="pip active"></div><div class="pip"></div>
     </div>
-    <div class="progress-hint" id="hint1">已找到 0 / 5 樣 — 找到所有物品才能繼續</div>
-    <button class="btn success" id="btn1next" style="display:none" onclick="goS2()">下一步：聆聽 →</button>
   </div>
 
-  <!-- Step 2 -->
-  <div id="s2" class="screen">
-    <div class="step-bar"><div class="step-pip done"></div><div class="step-pip active"></div><div class="step-pip"></div></div>
-    <div class="sense-header">
-      <div class="sense-badge">Step 2 · 聽覺</div>
-      <div class="sense-title">猜猜這是<br>什麼聲音？</div>
-      <div class="sense-sub">點擊 1–4 播放聲音，仔細聆聽後猜猜看是哪種自然聲。</div>
-    </div>
+  <div class="s2-wrap">
+    <div style="height:12px"></div>
     <div class="sound-grid">
       <div class="sound-card" id="sc-0" onclick="playAnon(0)">
-        <div class="sound-number">1</div>
+        <div class="sound-num">1</div>
         <div class="sound-wave" id="sw-0"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="sound-guess" id="sg-0"></div>
+        <div class="sound-result" id="sr-0"></div>
       </div>
       <div class="sound-card" id="sc-1" onclick="playAnon(1)">
-        <div class="sound-number">2</div>
+        <div class="sound-num">2</div>
         <div class="sound-wave" id="sw-1"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="sound-guess" id="sg-1"></div>
+        <div class="sound-result" id="sr-1"></div>
       </div>
       <div class="sound-card" id="sc-2" onclick="playAnon(2)">
-        <div class="sound-number">3</div>
+        <div class="sound-num">3</div>
         <div class="sound-wave" id="sw-2"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="sound-guess" id="sg-2"></div>
+        <div class="sound-result" id="sr-2"></div>
       </div>
       <div class="sound-card" id="sc-3" onclick="playAnon(3)">
-        <div class="sound-number">4</div>
+        <div class="sound-num">4</div>
         <div class="sound-wave" id="sw-3"><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="sound-guess" id="sg-3"></div>
+        <div class="sound-result" id="sr-3"></div>
       </div>
     </div>
-    <div class="guess-panel" id="guessPanel" style="display:none">
+
+    <div class="guess-sheet" id="guessSheet" style="display:none">
       <div class="guess-label">你覺得這是什麼聲音？</div>
-      <div class="guess-choices">
+      <div class="guess-grid">
         <button class="guess-btn" onclick="submitGuess('森林')">🌲 森林</button>
         <button class="guess-btn" onclick="submitGuess('海浪')">🌊 海浪</button>
         <button class="guess-btn" onclick="submitGuess('溪流')">🏞 溪流</button>
         <button class="guess-btn" onclick="submitGuess('雨聲')">🌧 雨聲</button>
       </div>
     </div>
-    <div class="progress-hint" id="hint2">已猜出 0 / 4 種聲音</div>
-    <button class="btn success" id="btn2next" style="display:none" onclick="goS3()">下一步：觸覺 →</button>
+
+    <div class="progress-hint" id="hint2">已猜出 0 / 4 種聲音 — 點數字播放，再選答案</div>
+    <div style="flex:1"></div>
+    <button class="btn btn-success" id="btn2next" onclick="goS3()" style="display:none;margin-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)">全部猜完！繼續 →</button>
+    <div style="height:calc(env(safe-area-inset-bottom,0px) + 16px)"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ STEP 3 ═══════════════ -->
+<div id="s3" class="screen">
+  <video id="arVideo" autoplay playsinline muted></video>
+  <canvas id="arCanvas"></canvas>
+
+  <div class="hud" style="z-index:20">
+    <div class="hud-badge amber">Step 3 · 觸覺</div>
+    <div class="hud-title" id="arObjName">手臂皮膚</div>
+    <div class="pip-row">
+      <div class="pip done"></div><div class="pip done"></div><div class="pip active"></div>
+    </div>
   </div>
 
-  <!-- Step 3 -->
-  <div id="s3" class="screen">
-    <div class="step-bar"><div class="step-pip done"></div><div class="step-pip done"></div><div class="step-pip active"></div></div>
-    <div class="sense-header">
-      <div class="sense-badge amber">Step 3 · 觸覺</div>
-      <div class="sense-title">感受 3 種觸感</div>
-      <div class="sense-sub">3D 物件懸浮在你眼前，伸手去感受它的質地。</div>
-    </div>
+  <div class="s3-wrap">
     <div class="touch-progress" id="tprog">
       <div class="tp-dot active" id="tp0"></div>
       <div class="tp-dot" id="tp1"></div>
       <div class="tp-dot" id="tp2"></div>
     </div>
-    <div class="ar-stage">
-      <video id="arVideo" autoplay playsinline muted></video>
-      <canvas id="arCanvas"></canvas>
-      <div class="ar-hud">
-        <div class="ar-pill" id="arPillLeft">物件 1 / 3</div>
-        <div class="ar-pill accent" id="arPillRight">手臂皮膚</div>
-      </div>
-    </div>
-    <div class="touch-q-card">
-      <div class="touch-q-label">觸摸提示</div>
-      <div class="touch-q-text" id="tqText"></div>
-      <div class="touch-choices" id="tqChoices"></div>
+    <div class="touch-card">
+      <div class="touch-card-label">觸摸提示</div>
+      <div class="touch-card-q" id="tqText"></div>
+      <div class="choices-row" id="tqChoices"></div>
     </div>
     <div class="progress-hint" id="hint3">已感受 0 / 3 種觸感</div>
-    <button class="btn success" id="btn3next" style="display:none" onclick="showComplete()">完成練習 ✓</button>
+    <button class="btn btn-success" id="btn3next" onclick="showComplete()" style="display:none">完成練習 ✓</button>
   </div>
+</div>
 
-  <!-- Complete -->
-  <div id="sDone" class="complete-screen">
-    <div class="step-bar" style="width:100%;padding:0 1.25rem;margin-bottom:2rem"><div class="step-pip done"></div><div class="step-pip done"></div><div class="step-pip done"></div></div>
+<!-- ═══════════════ COMPLETE ═══════════════ -->
+<div id="sDone" class="screen">
+  <div class="complete-wrap">
     <div class="complete-orb">🌿</div>
     <div class="complete-title">你回來了</div>
     <div class="complete-sub">三感已一一確認<br>視覺、聽覺、觸覺都告訴你<br>此刻你是安全的、踏實的</div>
@@ -247,52 +403,51 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <span class="complete-tag">✓ 聽覺 4 種</span>
       <span class="complete-tag">✓ 觸覺 3 種</span>
     </div>
-    <button class="btn primary" onclick="restart()">重新練習</button>
+    <button class="btn btn-white" style="max-width:280px" onclick="restart()">重新練習</button>
   </div>
-
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ===== STATE =====
-let camStream=null, detecting=false, detectCooldown=false, currentFacingMode='environment';
-let foundItems={backpack:false,pen:false,book:false,bottle:false,phone:false}, foundCount=0;
-let touchIdx=0, touchAnswered=[false,false,false];
-let arCamStream=null, arAnimId=null, threeRenderer=null;
-let anonAudio=null, playingIdx=-1;
-let soundGuessed=[false,false,false,false], soundGuessCount=0;
+// ═══════ STATE ═══════
+let camStream=null,detectCooldown=false,currentFacingMode='environment';
+let foundItems={backpack:false,pen:false,book:false,bottle:false,phone:false},foundCount=0;
+let anonAudio=null,playingIdx=-1;
+let soundGuessed=[false,false,false,false],soundGuessCount=0;
+let SOUND_ORDER=[];
+let touchIdx=0,touchAnswered=[false,false,false];
+let arCamStream=null,arAnimId=null,threeRenderer=null;
 
 const ITEM_KEYS=['backpack','pen','book','bottle','phone'];
 const SOUND_URLS={forest:'Forest.mp3',ocean:'Ocean.mp3',river:'river.mp3',rain:'Rain.mp3'};
-// shuffle order so it's different each time
-let SOUND_ORDER=[];
-(function shuffle(){
-  const arr=['forest','ocean','river','rain'];
-  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
-  SOUND_ORDER=arr;
-})();
 const SOUND_NAMES={forest:'森林',ocean:'海浪',river:'溪流',rain:'雨聲'};
-
 const TOUCH_ITEMS=[
-  {label:'手臂皮膚',q:'用手背輕輕摸一下自己的手臂皮膚，感覺是？',choices:['溫暖','涼涼的','粗糙','滑順']},
-  {label:'衣服布料',q:'輕輕搓一下你現在穿的衣服，布料感覺是？',choices:['粗糙','滑順','有彈性','厚實']},
-  {label:'椅子表面',q:'用手摸摸你坐的椅子表面，材質是？',choices:['木頭','塑膠','金屬','布料']}
+  {label:'手臂皮膚',  q:'用手背輕輕摸一下自己的手臂皮膚，感覺是？',  choices:['溫暖','涼涼的','粗糙','滑順']},
+  {label:'衣服布料',  q:'輕輕搓一下你現在穿的衣服，布料感覺是？',    choices:['粗糙','滑順','有彈性','厚實']},
+  {label:'椅子表面',  q:'用手摸摸你坐的椅子表面，材質是？',          choices:['木頭','塑膠','金屬','布料']}
 ];
 
-// ===== NAVIGATION =====
+function shuffleSounds(){
+  const a=['forest','ocean','river','rain'];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  SOUND_ORDER=a;
+}
+shuffleSounds();
+
+// ═══════ NAVIGATION ═══════
 function showScreen(id){
-  document.querySelectorAll('.screen,.complete-screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
 }
 
-// ===== STEP 1: CAMERA + DETECT =====
+// ═══════ STEP 1 ═══════
 function setStatus(m){document.getElementById('camStatus').textContent=m;}
 
 async function startCamera(){
   const btn=document.getElementById('camBtn');
-  btn.textContent='正在開啟鏡頭…'; btn.disabled=true;
-  setStatus('請稍候，開啟鏡頭中…');
+  btn.disabled=true; btn.textContent='開啟鏡頭中…';
+  setStatus('請稍候…');
   await openCam(currentFacingMode);
 }
 
@@ -305,26 +460,24 @@ async function openCam(facing){
     const vid=document.getElementById('camVideo');
     vid.srcObject=camStream; await vid.play();
     document.getElementById('camBtn').style.display='none';
-    document.getElementById('scanLine').style.display='block';
-    document.getElementById('snapBtn').style.display='block';
-    document.getElementById('flipBtn').style.display='flex';
-    setStatus('鏡頭已開啟！點「拍照偵測」讓 AI 分析畫面');
-    detecting=true;
+    document.getElementById('snapBtn').style.display='flex';
+    const fl=document.getElementById('flipBtn'); fl.style.display='flex';
+    document.getElementById('scanLine').classList.add('active');
+    setStatus('鏡頭已開啟 — 對準物品後點「拍照」');
   }catch(e){
     const btn=document.getElementById('camBtn');
-    btn.textContent='無法開啟鏡頭，請手動點擊確認'; btn.disabled=false;
-    setStatus('請手動點擊物品確認');
+    btn.disabled=false; btn.textContent='開啟鏡頭開始偵測';
+    setStatus('無法開啟鏡頭，請手動點擊物品確認');
   }
 }
 
-// FIX: flipCamera must reset opacity regardless of success/fail
 async function flipCamera(){
-  const flipBtn=document.getElementById('flipBtn');
-  flipBtn.style.opacity='0.4';
+  const fl=document.getElementById('flipBtn');
+  fl.style.opacity='0.4';
   currentFacingMode=currentFacingMode==='environment'?'user':'environment';
   setStatus(currentFacingMode==='user'?'切換為前鏡頭…':'切換為後鏡頭…');
-  try{ await openCam(currentFacingMode); }catch(e){}
-  flipBtn.style.opacity='1';
+  await openCam(currentFacingMode);
+  fl.style.opacity='1';
 }
 
 function captureFrame(){
@@ -339,73 +492,73 @@ async function snapAndDetect(){
   if(detectCooldown)return;
   detectCooldown=true;
   const snapBtn=document.getElementById('snapBtn');
-  snapBtn.textContent='AI 分析中…'; snapBtn.disabled=true;
-
+  snapBtn.disabled=true; snapBtn.textContent='AI 辨識中…';
   const b64=captureFrame();
   const unfound=ITEM_KEYS.filter(k=>!foundItems[k]);
-  const itemList={backpack:'書包',pen:'筆（原子筆、鉛筆等）',book:'書本（課本、筆記本等）',bottle:'水瓶',phone:'手機或平板'};
-  const lookingFor=unfound.map(k=>itemList[k]).join('、');
+  const labels={backpack:'書包',pen:'筆',book:'書本',bottle:'水瓶',phone:'手機或平板'};
+  const lookingFor=unfound.map(k=>labels[k]).join('、');
 
-  let success=false;
   for(let attempt=1;attempt<=3;attempt++){
-    setStatus(attempt===1?'正在分析畫面，請稍候…':`重試中（第 ${attempt} 次）…`);
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),12000);
+    setStatus(attempt===1?'AI 分析畫面中…':`重試中（${attempt}/3）…`);
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),12000);
     try{
       const resp=await fetch('/api/detect',{
-        method:'POST', signal:controller.signal,
+        method:'POST',signal:ctrl.signal,
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({imageBase64:b64,itemsToFind:lookingFor})
       });
       clearTimeout(timer);
       if(resp.status===503||resp.status===429){
-        if(attempt<3){await new Promise(r=>setTimeout(r,2000));continue;}
-        throw new Error('AI 伺服器忙碌中，請稍後再試');
+        if(attempt<3){await sleep(2000);continue;}
+        throw new Error('伺服器忙碌');
       }
-      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||'伺服器錯誤 '+resp.status);}
+      if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||'錯誤'+resp.status);}
       const data=await resp.json();
       const result=data.result||{};
-      let newFound=0;
-      ITEM_KEYS.forEach(k=>{if(!foundItems[k]&&result[k]===true){markFound(k,'AI 偵測 ✓');newFound++;}});
-      setStatus(newFound===0?'這次沒偵測到新物品，換個角度再試試':`找到 ${newFound} 樣新物品！可繼續拍其他物品`);
-      success=true; break;
+      let n=0;
+      ITEM_KEYS.forEach(k=>{if(!foundItems[k]&&result[k]===true){markFound(k,'AI ✓');n++;}});
+      setStatus(n===0?'未偵測到新物品，換個角度再試，或手動點擊':`找到 ${n} 樣！繼續拍其他物品`);
+      break;
     }catch(e){
       clearTimeout(timer);
-      const msg=e.name==='AbortError'?'回應超時，請重試':'偵測失敗：'+(e.message||'未知錯誤');
-      if(attempt===3)setStatus(msg+'，或手動點擊確認');
-      else await new Promise(r=>setTimeout(r,2000));
+      const msg=e.name==='AbortError'?'AI 回應超時':'偵測失敗：'+e.message;
+      if(attempt===3)setStatus(msg+'，請手動點擊物品確認');
+      else await sleep(2000);
     }
   }
-
-  snapBtn.textContent='拍照偵測'; snapBtn.disabled=false;
+  snapBtn.disabled=false; snapBtn.textContent='拍照 — 讓 AI 辨識';
   setTimeout(()=>{detectCooldown=false;},1500);
 }
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function markFound(key,src){
   if(foundItems[key])return;
   foundItems[key]=true; foundCount++;
   document.getElementById('ir-'+key).classList.add('found');
-  document.getElementById('id-'+key).textContent='✓';
-  document.getElementById('is-'+key).textContent=src;
+  document.getElementById('ic-'+key).textContent='✓';
+  document.getElementById('it-'+key).textContent=src;
   document.getElementById('hint1').textContent=`已找到 ${foundCount} / 5 樣`;
   if(foundCount>=5){
-    detecting=false;
-    document.getElementById('scanLine').style.display='none';
+    document.getElementById('scanLine').classList.remove('active');
     document.getElementById('snapBtn').style.display='none';
+    document.getElementById('btn1next').style.display='flex';
     setStatus('全部找到了！太棒了 🎉');
-    document.getElementById('btn1next').style.display='block';
-    document.getElementById('hint1').textContent='全部找到！點下方繼續';
+    document.getElementById('hint1').textContent='✓ 全部找到！';
   }
 }
-function manualMark(key){if(!foundItems[key])markFound(key,'手動確認');}
+function manualMark(k){if(!foundItems[k])markFound(k,'手動');}
 
 function goS2(){
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-  detecting=false;
+  document.getElementById('camVideo').srcObject=null;
+  document.getElementById('flipBtn').style.display='none';
+  document.getElementById('scanLine').classList.remove('active');
   showScreen('s2');
 }
 
-// ===== STEP 2: SOUND GUESS =====
+// ═══════ STEP 2 ═══════
 function playAnon(i){
   if(soundGuessed[i])return;
   if(anonAudio){anonAudio.pause();anonAudio=null;}
@@ -414,27 +567,25 @@ function playAnon(i){
   document.getElementById('sc-'+i).classList.add('playing');
   try{
     const a=new Audio(SOUND_URLS[SOUND_ORDER[i]]);
-    a.loop=true; a.volume=0.75;
-    a.play().catch(()=>{});
+    a.loop=true; a.volume=0.8; a.play().catch(()=>{});
     anonAudio=a;
   }catch(e){}
-  document.getElementById('guessPanel').style.display='block';
+  document.getElementById('guessSheet').style.display='block';
 }
 
 function submitGuess(answer){
   if(playingIdx<0)return;
   const i=playingIdx;
   const correct=SOUND_NAMES[SOUND_ORDER[i]];
-  const card=document.getElementById('sc-'+i);
-  card.classList.remove('playing'); card.classList.add('done');
   const isRight=answer===correct;
-  document.getElementById('sg-'+i).textContent=isRight?`✓ ${correct}`:`${answer} → ${correct}`;
+  document.getElementById('sc-'+i).classList.remove('playing');
+  document.getElementById('sc-'+i).classList.add('done');
+  document.getElementById('sr-'+i).textContent=isRight?`✓ ${correct}`:`${answer}→${correct}`;
   if(anonAudio){anonAudio.pause();anonAudio=null;}
-  playingIdx=-1;
-  soundGuessed[i]=true; soundGuessCount++;
+  playingIdx=-1; soundGuessed[i]=true; soundGuessCount++;
   document.getElementById('hint2').textContent=`已猜出 ${soundGuessCount} / 4 種聲音`;
-  document.getElementById('guessPanel').style.display='none';
-  if(soundGuessCount>=4)document.getElementById('btn2next').style.display='block';
+  document.getElementById('guessSheet').style.display='none';
+  if(soundGuessCount>=4)document.getElementById('btn2next').style.display='flex';
 }
 
 function goS3(){
@@ -443,286 +594,190 @@ function goS3(){
   initAR();
 }
 
-// ===== STEP 3: AR + 3D =====
+// ═══════ STEP 3 AR ═══════
 async function initAR(){
   touchIdx=0; touchAnswered=[false,false,false];
   renderTouchStep(0);
-  await startARCam();
-  startThreeJS(0);
-}
-
-async function startARCam(){
   try{
     arCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     const v=document.getElementById('arVideo');
     v.srcObject=arCamStream; await v.play();
   }catch(e){}
+  resizeCanvas();
+  startThreeJS(0);
+}
+
+function resizeCanvas(){
+  const c=document.getElementById('arCanvas');
+  c.width=window.innerWidth; c.height=window.innerHeight;
 }
 
 function renderTouchStep(i){
   const item=TOUCH_ITEMS[i];
-  document.getElementById('arPillLeft').textContent=`物件 ${i+1} / 3`;
-  document.getElementById('arPillRight').textContent=item.label;
+  document.getElementById('arObjName').textContent=item.label;
   document.getElementById('tqText').textContent=item.q;
   const ch=document.getElementById('tqChoices'); ch.innerHTML='';
   item.choices.forEach(c=>{
     const btn=document.createElement('div');
-    btn.className='touch-choice'; btn.textContent=c;
+    btn.className='choice-chip'; btn.textContent=c;
     btn.onclick=()=>selectChoice(i,btn); ch.appendChild(btn);
   });
-  [0,1,2].forEach(j=>{document.getElementById('tp'+j).className='tp-dot'+(j<i?' done':j===i?' active':'');});
+  [0,1,2].forEach(j=>{
+    const d=document.getElementById('tp'+j);
+    d.className='tp-dot'+(j<i?' done':j===i?' active':'');
+  });
   document.getElementById('hint3').textContent=`已感受 ${touchAnswered.filter(Boolean).length} / 3 種觸感`;
 }
 
 function selectChoice(idx,btn){
   if(touchAnswered[idx])return;
-  document.querySelectorAll('.touch-choice').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.choice-chip').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
   touchAnswered[idx]=true;
   document.getElementById('hint3').textContent=`已感受 ${touchAnswered.filter(Boolean).length} / 3 種觸感`;
   setTimeout(()=>{
     if(touchIdx<2){touchIdx++;renderTouchStep(touchIdx);startThreeJS(touchIdx);}
-    else{document.getElementById('btn3next').style.display='block';}
+    else document.getElementById('btn3next').style.display='flex';
   },700);
 }
 
 function startThreeJS(idx){
   if(arAnimId)cancelAnimationFrame(arAnimId);
   if(threeRenderer){threeRenderer.dispose();threeRenderer=null;}
-
+  const THREE=window.THREE; if(!THREE)return;
+  const W=window.innerWidth, H=window.innerHeight;
   const canvas=document.getElementById('arCanvas');
-  const W=canvas.parentElement.offsetWidth||340;
-  const H=Math.round(W*3/4);
   canvas.width=W; canvas.height=H;
 
-  const THREE=window.THREE;
-  if(!THREE){startARFallback(idx,W,H);return;}
-
   const scene=new THREE.Scene();
-  const cam=new THREE.PerspectiveCamera(55,W/H,0.1,100);
-  cam.position.z=3.5;
-
+  const cam=new THREE.PerspectiveCamera(50,W/H,0.1,100);
+  cam.position.z=4;
   const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
-  renderer.setSize(W,H); renderer.setClearColor(0x000000,0);
-  renderer.shadowMap.enabled=true;
+  renderer.setSize(W,H); renderer.setClearColor(0,0); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   threeRenderer=renderer;
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff,0.5));
-  const sun=new THREE.DirectionalLight(0xfff5e0,1.4);
-  sun.position.set(3,5,4); sun.castShadow=true; scene.add(sun);
-  const fill=new THREE.DirectionalLight(0xaaccff,0.35);
-  fill.position.set(-4,-2,-3); scene.add(fill);
+  scene.add(new THREE.AmbientLight(0xffffff,0.6));
+  const sun=new THREE.DirectionalLight(0xfff5e0,1.5); sun.position.set(3,5,4); scene.add(sun);
+  const fill=new THREE.DirectionalLight(0xaaccff,0.4); fill.position.set(-4,-2,-3); scene.add(fill);
+
+  const group=new THREE.Group(); scene.add(group);
 
   if(idx===0){
-    // ===== 手臂：更真實的前臂 =====
-    const skinColor=0xd4a27a;
-    const skinMat=new THREE.MeshStandardMaterial({color:skinColor,roughness:0.75,metalness:0.05});
-    const darkSkin=new THREE.MeshStandardMaterial({color:0xc0906a,roughness:0.8,metalness:0.0});
-
-    // 前臂主體
-    const forearm=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.28,2.0,32,1),skinMat);
-    forearm.rotation.z=Math.PI/2; scene.add(forearm);
-
-    // 手腕（漸細）
-    const wrist=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.22,0.4,32),skinMat);
-    wrist.rotation.z=Math.PI/2; wrist.position.x=1.15; scene.add(wrist);
-
-    // 手肘（球形封端）
-    const elbowEnd=new THREE.Mesh(new THREE.SphereGeometry(0.28,32,16),darkSkin);
-    elbowEnd.position.x=-1.1; scene.add(elbowEnd);
-
-    // 手腕封端
-    const wristEnd=new THREE.Mesh(new THREE.SphereGeometry(0.16,32,16),skinMat);
-    wristEnd.position.x=1.35; scene.add(wristEnd);
-
-    // 手臂輪廓線（肌肉感）
-    const bumpMat=new THREE.MeshStandardMaterial({color:0xbe8864,roughness:1,metalness:0});
-    const bump=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.24,1.2,8,1),bumpMat);
-    bump.rotation.z=Math.PI/2; bump.position.set(-0.1,0.18,0); scene.add(bump);
-
-    // 細毛（線條模擬體毛）
-    for(let i=0;i<12;i++){
-      const hair=new THREE.Mesh(
-        new THREE.CylinderGeometry(0.008,0.004,0.12,4),
-        new THREE.MeshStandardMaterial({color:0x6b4423,roughness:1})
-      );
-      const angle=Math.random()*Math.PI*2;
-      const r=0.22+Math.random()*0.04;
-      hair.position.set((Math.random()-0.5)*1.8, r*Math.cos(angle), r*Math.sin(angle));
-      hair.rotation.z=Math.PI/2+((Math.random()-0.5)*0.3);
-      scene.add(hair);
+    const skin=new THREE.MeshStandardMaterial({color:0xd4a27a,roughness:0.75,metalness:0.05});
+    const dark=new THREE.MeshStandardMaterial({color:0xb8895a,roughness:0.8});
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.30,2.2,32),skin);
+    arm.rotation.z=Math.PI/2; group.add(arm);
+    group.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.30,32,16),dark),{position:new THREE.Vector3(-1.2,0,0)}));
+    group.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.24,0.45,32),skin),{rotation:new THREE.Euler(0,0,Math.PI/2),position:new THREE.Vector3(1.2,0,0)}));
+    group.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.17,32,16),skin),{position:new THREE.Vector3(1.45,0,0)}));
+    for(let i=0;i<14;i++){
+      const h=new THREE.Mesh(new THREE.CylinderGeometry(0.007,0.003,0.14,4),new THREE.MeshStandardMaterial({color:0x6b4423,roughness:1}));
+      const a=Math.random()*Math.PI*2,r=0.23+Math.random()*0.05;
+      h.position.set((Math.random()-0.5)*2,r*Math.cos(a),r*Math.sin(a));
+      h.rotation.z=Math.PI/2+((Math.random()-0.5)*0.3); group.add(h);
     }
-
   } else if(idx===1){
-    // ===== 衣服：T-shirt 形狀 =====
-    const clothMat=new THREE.MeshStandardMaterial({color:0x4a7fbe,roughness:0.95,metalness:0.0,side:THREE.DoubleSide});
-    const darkCloth=new THREE.MeshStandardMaterial({color:0x3a6aaa,roughness:1,side:THREE.DoubleSide});
-
-    // 衣身（扁平圓角方塊）
-    const body=new THREE.Mesh(new THREE.BoxGeometry(1.8,2.0,0.12),clothMat);
-    body.position.y=0; scene.add(body);
-
-    // 左袖
-    const lSleeve=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.65,0.1),clothMat);
-    lSleeve.position.set(-1.2,0.72,0); lSleeve.rotation.z=Math.PI/8; scene.add(lSleeve);
-
-    // 右袖
-    const rSleeve=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.65,0.1),clothMat);
-    rSleeve.position.set(1.2,0.72,0); rSleeve.rotation.z=-Math.PI/8; scene.add(rSleeve);
-
-    // 領口（圓環）
-    const collar=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.06,12,32),darkCloth);
-    collar.position.y=1.0; collar.rotation.x=Math.PI/2; scene.add(collar);
-
-    // 衣服皺褶（水平線）
-    [-0.5,0,0.5].forEach(y=>{
-      const fold=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.03,0.015),darkCloth);
-      fold.position.set(0,y,0.07); scene.add(fold);
+    const cloth=new THREE.MeshStandardMaterial({color:0x3d6eb5,roughness:0.95,side:THREE.DoubleSide});
+    const dark=new THREE.MeshStandardMaterial({color:0x2d5a9a,roughness:1,side:THREE.DoubleSide});
+    group.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(2.0,2.2,0.12),cloth)));
+    const lS=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.7,0.1),cloth);
+    lS.position.set(-1.3,0.75,0); lS.rotation.z=Math.PI/8; group.add(lS);
+    const rS=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.7,0.1),cloth);
+    rS.position.set(1.3,0.75,0); rS.rotation.z=-Math.PI/8; group.add(rS);
+    const collar=new THREE.Mesh(new THREE.TorusGeometry(0.35,0.065,12,32),dark);
+    collar.position.y=1.1; collar.rotation.x=Math.PI/2; group.add(collar);
+    [-0.5,0.05,0.6].forEach(y=>{
+      const f=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.028,0.015),dark);
+      f.position.set(0,y,0.07); group.add(f);
     });
-
   } else {
-    // ===== 椅子：完整木椅 =====
-    const woodMat=new THREE.MeshStandardMaterial({color:0x8b5c2a,roughness:0.85,metalness:0.05});
-    const darkWood=new THREE.MeshStandardMaterial({color:0x5a3618,roughness:0.9,metalness:0.05});
-
-    // 椅座
-    const seat=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.12,1.5),woodMat);
-    seat.position.y=-0.1; seat.castShadow=true; scene.add(seat);
-
-    // 椅座邊框
-    [[0,0.5],[0,-0.5]].forEach(([x,z])=>{
-      const rail=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.06,0.08),darkWood);
-      rail.position.set(x,-0.04,z*0.95); scene.add(rail);
+    const wood=new THREE.MeshStandardMaterial({color:0x8b5c2a,roughness:0.85,metalness:0.05});
+    const dark=new THREE.MeshStandardMaterial({color:0x5a3618,roughness:0.9});
+    const seat=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.14,1.6),wood); seat.position.y=-0.15; group.add(seat);
+    const back=new THREE.Mesh(new THREE.BoxGeometry(2.0,1.3,0.12),wood); back.position.set(0,0.56,-0.78); group.add(back);
+    [-0.1,0.22,0.54].forEach(y=>{const b=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.065,0.065),dark);b.position.set(0,y,-0.78);group.add(b);});
+    [[-0.8,0.65],[-0.8,-0.65],[0.8,0.65],[0.8,-0.65]].forEach(([x,z])=>{
+      const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.06,1.0,12),dark);
+      leg.position.set(x,-0.72,z); group.add(leg);
     });
-
-    // 椅背板
-    const back=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.2,0.1),woodMat);
-    back.position.set(0,0.56,-0.72); back.castShadow=true; scene.add(back);
-
-    // 椅背裝飾橫條
-    [-0.1,0.2,0.5].forEach(y=>{
-      const bar=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.06,0.06),darkWood);
-      bar.position.set(0,y,-0.72); scene.add(bar);
-    });
-
-    // 四隻腳
-    [[-0.75,0.6],[-0.75,-0.6],[0.75,0.6],[0.75,-0.6]].forEach(([x,z])=>{
-      const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.055,0.9,12),darkWood);
-      leg.position.set(x,-0.65,z); leg.castShadow=true; scene.add(leg);
-    });
-
-    // 橫撐（前後）
-    [[0,0.6],[0,-0.6]].forEach(([x,z])=>{
-      const r=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,1.5,8),darkWood);
-      r.rotation.z=Math.PI/2; r.position.set(x,-0.85,z); scene.add(r);
-    });
-    // 橫撐（左右）
-    [[-0.75,0],[0.75,0]].forEach(([x,z])=>{
-      const r=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,1.2,8),darkWood);
-      r.rotation.x=Math.PI/2; r.position.set(x,-0.85,z); scene.add(r);
-    });
+    [0.65,-0.65].forEach(z=>{const r=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.6,8),dark);r.rotation.z=Math.PI/2;r.position.set(0,-0.9,z);group.add(r);});
   }
 
-  // 懸浮發光環（AR感）
-  const ringGeo=new THREE.TorusGeometry(1.1,0.015,8,64);
-  const ringMat=new THREE.MeshBasicMaterial({color:0xd29922,transparent:true,opacity:0.5});
-  const ring=new THREE.Mesh(ringGeo,ringMat); ring.rotation.x=Math.PI/2; scene.add(ring);
-  const ring2=new THREE.Mesh(new THREE.TorusGeometry(1.3,0.008,8,64),new THREE.MeshBasicMaterial({color:0xd29922,transparent:true,opacity:0.25}));
+  // AR ring
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.3,0.016,8,64),new THREE.MeshBasicMaterial({color:0xe6a817,transparent:true,opacity:0.55}));
+  ring.rotation.x=Math.PI/2; scene.add(ring);
+  const ring2=new THREE.Mesh(new THREE.TorusGeometry(1.55,0.009,8,64),new THREE.MeshBasicMaterial({color:0xe6a817,transparent:true,opacity:0.25}));
   ring2.rotation.x=Math.PI/2; scene.add(ring2);
 
   let t=0;
   function animate(){
     arAnimId=requestAnimationFrame(animate);
-    t+=0.01;
-    scene.position.y=Math.sin(t)*0.07;
-    scene.rotation.y=Math.sin(t*0.35)*0.2;
-    ring.rotation.z=t*0.3;
-    ring2.rotation.z=-t*0.2;
+    t+=0.012;
+    group.position.y=Math.sin(t)*0.08;
+    group.rotation.y=Math.sin(t*0.4)*0.22;
+    ring.rotation.z=t*0.25; ring2.rotation.z=-t*0.18;
     renderer.render(scene,cam);
   }
   animate();
-}
-
-function startARFallback(idx,W,H){
-  const canvas=document.getElementById('arCanvas');
-  const ctx=canvas.getContext('2d');
-  const cols=['#d4a27a','#4a7fbe','#8b5c2a'];
-  const labels=['手臂皮膚','衣服布料','椅子表面'];
-  let t=0;
-  function draw(){
-    ctx.clearRect(0,0,W,H); t+=0.02;
-    const cy=H/2+Math.sin(t)*8;
-    ctx.strokeStyle=`rgba(210,153,34,${0.08+Math.sin(t)*0.03})`;
-    ctx.lineWidth=0.5;
-    for(let r=50;r<150;r+=35){ctx.beginPath();ctx.arc(W/2,cy,r,0,Math.PI*2);ctx.stroke();}
-    ctx.fillStyle=cols[idx]; ctx.beginPath(); ctx.arc(W/2,cy,52,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font='500 13px "Noto Sans TC",sans-serif';
-    ctx.textAlign='center'; ctx.fillText(labels[idx],W/2,cy+75);
-    arAnimId=requestAnimationFrame(draw);
-  }
-  draw();
 }
 
 function showComplete(){
   if(arAnimId)cancelAnimationFrame(arAnimId);
   if(threeRenderer){threeRenderer.dispose();threeRenderer=null;}
   if(arCamStream){arCamStream.getTracks().forEach(t=>t.stop());arCamStream=null;}
+  document.getElementById('arVideo').srcObject=null;
   showScreen('sDone');
 }
 
+// ═══════ RESTART ═══════
 function restart(){
-  // reset all state
+  // reset state
   foundItems={backpack:false,pen:false,book:false,bottle:false,phone:false}; foundCount=0;
-  touchIdx=0; touchAnswered=[false,false,false];
+  detectCooldown=false; currentFacingMode='environment';
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
   soundGuessed=[false,false,false,false]; soundGuessCount=0; playingIdx=-1;
   if(anonAudio){anonAudio.pause();anonAudio=null;}
-  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-  if(arCamStream){arCamStream.getTracks().forEach(t=>t.stop());arCamStream=null;}
+  touchIdx=0; touchAnswered=[false,false,false];
   if(arAnimId)cancelAnimationFrame(arAnimId);
   if(threeRenderer){threeRenderer.dispose();threeRenderer=null;}
-  detectCooldown=false; detecting=false; currentFacingMode='environment';
-
-  // re-shuffle sounds
-  (function shuffle(){
-    const arr=['forest','ocean','river','rain'];
-    for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
-    SOUND_ORDER=arr;
-  })();
+  if(arCamStream){arCamStream.getTracks().forEach(t=>t.stop());arCamStream=null;}
+  shuffleSounds();
 
   // reset S1 UI
   ITEM_KEYS.forEach(k=>{
     document.getElementById('ir-'+k).classList.remove('found');
-    document.getElementById('id-'+k).textContent='✓';
-    document.getElementById('is-'+k).textContent='';
+    document.getElementById('ic-'+k).textContent='✓';
+    document.getElementById('it-'+k).textContent='';
   });
-  document.getElementById('hint1').textContent='已找到 0 / 5 樣 — 找到所有物品才能繼續';
-  document.getElementById('btn1next').style.display='none';
-  const camBtn=document.getElementById('camBtn');
-  camBtn.style.display='block'; camBtn.textContent='開啟鏡頭 · 開始偵測'; camBtn.disabled=false;
+  document.getElementById('hint1').textContent='已找到 0 / 5 樣';
+  document.getElementById('camStatus').textContent='點擊下方按鈕開啟鏡頭';
+  const cb=document.getElementById('camBtn');
+  cb.style.display='flex'; cb.disabled=false; cb.textContent='開啟鏡頭開始偵測';
   document.getElementById('snapBtn').style.display='none';
-  document.getElementById('snapBtn').textContent='拍照偵測 — 讓 AI 分析畫面';
+  document.getElementById('snapBtn').textContent='拍照 — 讓 AI 辨識';
   document.getElementById('snapBtn').disabled=false;
+  document.getElementById('btn1next').style.display='none';
   document.getElementById('flipBtn').style.display='none';
   document.getElementById('flipBtn').style.opacity='1';
-  document.getElementById('scanLine').style.display='none';
-  document.getElementById('camStatus').textContent='點擊下方按鈕開啟鏡頭';
+  document.getElementById('scanLine').classList.remove('active');
   document.getElementById('camVideo').srcObject=null;
 
   // reset S2 UI
   [0,1,2,3].forEach(i=>{
     const c=document.getElementById('sc-'+i);
     c.classList.remove('playing','done');
-    document.getElementById('sg-'+i).textContent='';
+    document.getElementById('sr-'+i).textContent='';
   });
-  document.getElementById('guessPanel').style.display='none';
-  document.getElementById('hint2').textContent='已猜出 0 / 4 種聲音';
+  document.getElementById('guessSheet').style.display='none';
+  document.getElementById('hint2').textContent='已猜出 0 / 4 種聲音 — 點數字播放，再選答案';
   document.getElementById('btn2next').style.display='none';
 
   // reset S3 UI
   document.getElementById('arVideo').srcObject=null;
   document.getElementById('hint3').textContent='已感受 0 / 3 種觸感';
   document.getElementById('btn3next').style.display='none';
+  const ac=document.getElementById('arCanvas');
+  ac.width=0; ac.height=0;
 
   showScreen('s1');
 }
