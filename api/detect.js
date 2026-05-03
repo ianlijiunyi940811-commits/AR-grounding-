@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const timer = setTimeout(() => controller.abort(), 10000);
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           signal: controller.signal,
