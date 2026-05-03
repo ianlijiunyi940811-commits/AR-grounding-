@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   if (!imageBase64) return res.status(400).json({ error: 'Missing imageBase64' });
   if (!itemsToFind) return res.status(400).json({ error: 'Missing itemsToFind' });
 
-  const prompt = `請仔細看這張圖片，判斷畫面中是否有以下物品（只找清楚在畫面前景的物品，不要猜測背景模糊物品）：${itemsToFind}。只回傳 JSON，不要其他文字：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}`;
+  const prompt = `看這張圖片，找出是否有以下物品。請放寬判斷標準，只要圖片中有看到就算，不需要很清楚。物品清單：${itemsToFind}。只回傳 JSON 格式，不要任何其他文字或解釋：{"backpack":false,"pen":false,"book":false,"bottle":false,"phone":false}`;
 
   let response, data;
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           signal: controller.signal,
